@@ -4,11 +4,27 @@
   "description": "LARACHE WEB DEV — تصميم وتطوير المواقع والحلول الرقمية.",
   "lang": "ar",
   "dir": "rtl",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/larachedev/",
+  "scope": "/larachedev/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0f172a",
-  "icons": [{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}],
-  "shortcuts": [{"name":"الخدمات","url":"/#services"},{"name":"اتصل بنا","url":"/#contact"}]
+  "icons": [
+    {
+      "src": "/larachedev/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "الخدمات",
+      "url": "/larachedev/#services"
+    },
+    {
+      "name": "اتصل بنا",
+      "url": "/larachedev/#contact"
+    }
+  ]
 }

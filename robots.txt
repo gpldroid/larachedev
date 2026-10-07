@@ -1,0 +1,1 @@
+User-agent: *\nAllow: /\n\nSitemap: https://gpldroid.github.io/larachedev/sitemap.xml\n

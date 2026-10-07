@@ -22,7 +22,7 @@ jobs:
           set -e
           rm -rf /tmp/source
           mkdir -p /tmp/source
-          curl -L --fail --retry 3 -o /tmp/source.zip https://github.com/gpldroid/dev-v2/archive/refs/heads/main.zip
+          curl -L --fail --retry 3 -o /tmp/source.zip https://github.com/gpldroid/larachedev/archive/refs/heads/main.zip
           unzip -q /tmp/source.zip -d /tmp/source
           SRC="$(find /tmp/source -mindepth 1 -maxdepth 1 -type d | head -1)"
           test -n "$SRC"
@@ -49,10 +49,10 @@ jobs:
               except (UnicodeDecodeError, OSError):
                   continue
 
-              s = s.replace("https://larache.xyz", base)
-              s = s.replace("https://raw.githubusercontent.com/gpldroid/dev-v2/refs/heads/main/assets/LARACHE%20LOGO.webp", base + "/assets/LARACHE%20LOGO.webp")
-              s = s.replace("https://github.com/gpldroid/dev-v2", "https://github.com/gpldroid/larachedev")
-              s = s.replace("/dev-v2/", "/larachedev/")
+              s = s.replace("https://gpldroid.github.io/larachedev", base)
+              s = s.replace("https://gpldroid.github.io/larachedev/assets/LARACHE%20LOGO.webp", base + "/assets/LARACHE%20LOGO.webp")
+              s = s.replace("https://github.com/gpldroid/larachedev", "https://github.com/gpldroid/larachedev")
+              s = s.replace("/larachedev/", "/larachedev/")
 
               for x in [
                   "/favicon.svg", "/manifest.webmanifest", "/assets/",
@@ -66,10 +66,10 @@ jobs:
                   s = s.replace("src='" + x, "src='/larachedev" + x)
                   s = s.replace("url(" + x, "url(/larachedev" + x)
 
-              s = s.replace('href="/"', 'href="/larachedev/"')
-              s = s.replace("href='/'", "href='/larachedev/'")
-              s = s.replace('href="/#', 'href="/larachedev/#')
-              s = s.replace("href='/#", "href='/larachedev/#")
+              s = s.replace('href="/larachedev/"', 'href="/larachedev/"')
+              s = s.replace("href='/larachedev/'", "href='/larachedev/'")
+              s = s.replace('href="/larachedev/#', 'href="/larachedev/#')
+              s = s.replace("href='/larachedev/#", "href='/larachedev/#")
 
               if p.name == "manifest.webmanifest":
                   s = s.replace('"start_url": "/"', '"start_url": "/larachedev/"')
@@ -81,7 +81,7 @@ jobs:
                   s = "User-agent: *\\nAllow: /\\n\\nSitemap: " + base + "/sitemap.xml\\n"
 
               if p.name == "sitemap.xml":
-                  s = s.replace("https://larache.xyz", base)
+                  s = s.replace("https://gpldroid.github.io/larachedev", base)
 
               if p.name == "LICENSE":
                   s = s.replace("Copyright (c) 2026 larache.xyz", "Copyright (c) 2026 gpldroid.github.io/larachedev")
@@ -91,7 +91,7 @@ jobs:
           # Ensure the project URL is present in the README.
           readme = Path("README.md")
           if readme.exists():
-              s = readme.read_text(encoding="utf-8").replace("https://larache.xyz", base)
+              s = readme.read_text(encoding="utf-8").replace("https://gpldroid.github.io/larachedev", base)
               readme.write_text(s, encoding="utf-8")
           PY
 
@@ -108,7 +108,7 @@ jobs:
           test -f assets/js/app.js
           test -f assets/js/consent.js
           test ! -f CNAME
-          if grep -RInE 'https://larache\\.xyz|/dev-v2/' --exclude-dir=.git .; then
+          if grep -RInE 'https://larache\\.xyz|/larachedev/' --exclude-dir=.git .; then
             echo "Found forbidden legacy URL/path"
             exit 1
           fi

@@ -317,6 +317,40 @@ GitHub
 
 ---
 
+# 📁 بنية المشروع
+
+المشروع مصمم ليكون خفيفًا وسهل التطوير والصيانة.
+
+مثال على البنية:
+
+```text
+dev-v3/
+│
+├── index.html
+├── platforms.html
+├── instructions.html
+├── privacy.html
+├── terms.html
+├── sitemap.html
+├── 404.html
+│
+├── robots.txt
+├── sitemap.xml
+├── manifest.webmanifest
+├── favicon.svg
+│
+└── assets/
+    ├── css/
+    │   └── style.css
+    │
+    ├── js/
+    │   └── app.js
+    │
+    └── images/
+```
+
+---
+
 # 🔗 الموقع الرسمي
 
 يمكن زيارة المنصة من خلال:
@@ -388,12 +422,12 @@ Maintainability
 
 # 👤 Credits
 
-**Project Owner & Developer:**  
+**Project Owner & Developer:**
 **عماد الدين لمراني**
 
 **Project:** Larache Web Dev
 
-**Official Website:**  
+**Official Website:**
 https://gpldroid.github.io/larachedev
 
 ---
