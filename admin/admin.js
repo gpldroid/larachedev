@@ -124,13 +124,9 @@ $("#loginForm").onsubmit=async e=>{
     });
     const j=await r.json();
     if(!r.ok)throw Error(j.error_description||j.msg||j.error||"فشل تسجيل الدخول.");
-    session=j;localStorage.setItem("larachedev_session",JSON.stringify(j));await (async()=>{
-  try{
-    const fromGithub=await consumeGithubCallback();
-    if(fromGithub)msg("loginMsg","تم تسجيل الدخول عبر GitHub، جارٍ التحقق من صلاحية الإدارة…");
-  }catch(e){msg("loginMsg","❌ "+e.message)}
-  await start();
-})();
+    session=j;
+    localStorage.setItem("larachedev_session",JSON.stringify(j));
+    await start();
   }catch(e){msg("loginMsg",e.message)}
 };
 
