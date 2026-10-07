@@ -1,0 +1,31 @@
+name: Import uploaded project
+on:
+  push:
+    paths:
+      - "__upload_parts/**"
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild archive
+        run: |
+          set -e
+          mkdir -p /tmp/parts
+          cat __upload_parts/*.b64 | tr -d '\n' | base64 -d > /tmp/project.zip
+          rm -rf /tmp/project
+          mkdir -p /tmp/project
+          unzip -q /tmp/project.zip -d /tmp/project
+          root="$(find /tmp/project -mindepth 1 -maxdepth 1 -type d | head -n1)"
+          test -n "$root"
+          rsync -a --exclude='.git' "$root/" ./ 
+          rm -rf __upload_parts "$root" /tmp/project /tmp/project.zip
+          rm -f .github/workflows/import-upload.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "Import uploaded project files"
+          git push
