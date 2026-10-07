@@ -31,7 +31,7 @@ jobs:
       - name: Import every source file and adapt GitHub Pages paths
         run: |
           set -e
-          rsync -a --delete --exclude='.git/' --exclude='.github/workflows/import-dev-v2.yml' "$SRC"/ ./
+          rsync -a --delete --exclude='.git/' --exclude='.github/workflows/' "$SRC"/ ./
           rm -f CNAME
 
           python3 - <<'PY'
