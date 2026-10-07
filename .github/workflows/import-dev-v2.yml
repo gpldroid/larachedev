@@ -1,0 +1,129 @@
+name: Import complete dev-v2 site
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download source repository
+        run: |
+          set -e
+          rm -rf /tmp/source
+          mkdir -p /tmp/source
+          curl -L --fail --retry 3 -o /tmp/source.zip https://github.com/gpldroid/dev-v2/archive/refs/heads/main.zip
+          unzip -q /tmp/source.zip -d /tmp/source
+          SRC="$(find /tmp/source -mindepth 1 -maxdepth 1 -type d | head -1)"
+          test -n "$SRC"
+          echo "SRC=$SRC" >> "$GITHUB_ENV"
+
+      - name: Import every source file and adapt GitHub Pages paths
+        run: |
+          set -e
+          rsync -a --delete --exclude='.git/' --exclude='.github/workflows/import-dev-v2.yml' "$SRC"/ ./
+          rm -f CNAME
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          base = "https://gpldroid.github.io/larachedev"
+
+          for p in Path(".").rglob("*"):
+              if not p.is_file() or p.name == "CNAME":
+                  continue
+              if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico"}:
+                  continue
+              try:
+                  s = p.read_text(encoding="utf-8")
+              except (UnicodeDecodeError, OSError):
+                  continue
+
+              s = s.replace("https://larache.xyz", base)
+              s = s.replace("https://raw.githubusercontent.com/gpldroid/dev-v2/refs/heads/main/assets/LARACHE%20LOGO.webp", base + "/assets/LARACHE%20LOGO.webp")
+              s = s.replace("https://github.com/gpldroid/dev-v2", "https://github.com/gpldroid/larachedev")
+              s = s.replace("/dev-v2/", "/larachedev/")
+
+              for x in [
+                  "/favicon.svg", "/manifest.webmanifest", "/assets/",
+                  "/privacy.html", "/terms.html", "/sitemap.html",
+                  "/instructions.html", "/platforms.html", "/404.html",
+                  "/robots.txt", "/sitemap.xml"
+              ]:
+                  s = s.replace('href="' + x, 'href="/larachedev' + x)
+                  s = s.replace("href='" + x, "href='/larachedev" + x)
+                  s = s.replace('src="' + x, 'src="/larachedev' + x)
+                  s = s.replace("src='" + x, "src='/larachedev" + x)
+                  s = s.replace("url(" + x, "url(/larachedev" + x)
+
+              s = s.replace('href="/"', 'href="/larachedev/"')
+              s = s.replace("href='/'", "href='/larachedev/'")
+              s = s.replace('href="/#', 'href="/larachedev/#')
+              s = s.replace("href='/#", "href='/larachedev/#")
+
+              if p.name == "manifest.webmanifest":
+                  s = s.replace('"start_url": "/"', '"start_url": "/larachedev/"')
+                  s = s.replace('"scope": "/"', '"scope": "/larachedev/"')
+                  s = s.replace('"src": "/favicon.svg"', '"src": "/larachedev/favicon.svg"')
+                  s = s.replace('"url": "/#', '"url": "/larachedev/#')
+
+              if p.name == "robots.txt":
+                  s = "User-agent: *\\nAllow: /\\n\\nSitemap: " + base + "/sitemap.xml\\n"
+
+              if p.name == "sitemap.xml":
+                  s = s.replace("https://larache.xyz", base)
+
+              if p.name == "LICENSE":
+                  s = s.replace("Copyright (c) 2026 larache.xyz", "Copyright (c) 2026 gpldroid.github.io/larachedev")
+
+              p.write_text(s, encoding="utf-8")
+
+          # Ensure the project URL is present in the README.
+          readme = Path("README.md")
+          if readme.exists():
+              s = readme.read_text(encoding="utf-8").replace("https://larache.xyz", base)
+              readme.write_text(s, encoding="utf-8")
+          PY
+
+      - name: Validate imported tree
+        run: |
+          test -f index.html
+          test -f assets/LARACHE\ LOGO.webp
+          test -f "LARACHE LOGO .png"
+          test -f assets/css/1style.css
+          test -f assets/css/2style.css
+          test -f assets/css/3style.css
+          test -f assets/css/4style.css
+          test -f assets/css/style.css
+          test -f assets/js/app.js
+          test -f assets/js/consent.js
+          test ! -f CNAME
+          if grep -RInE 'https://larache\\.xyz|/dev-v2/' --exclude-dir=.git .; then
+            echo "Found forbidden legacy URL/path"
+            exit 1
+          fi
+
+      - name: Commit imported project
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet || git commit -m 'feat: import complete dev-v2 site for larachedev'
+          git push
+
+      - name: Remove temporary importer
+        if: always()
+        run: |
+          git rm -f .github/workflows/import-dev-v2.yml 2>/dev/null || true
+          git diff --cached --quiet || git commit -m 'chore: remove temporary import workflow'
+          git push || true
