@@ -104,6 +104,7 @@ $("#loginForm").onsubmit=async e=>{
 
 $("#logoutBtn").onclick=()=>{localStorage.removeItem("larachedev_session");location.reload()};
 $("#refreshFrame").onclick=()=>{const f=$("#siteFrame");f.src=f.src};
+$("#testGithubToken").onclick=testGithubHealth;
 
 async function loadFiles(){
   try{
@@ -152,6 +153,18 @@ function renderRuns(runs){
 }
 function renderReleases(releases){
   $("#releases").innerHTML=releases.length?releases.slice(0,20).map(x=>'<p><b>'+esc(x.tag_name||x.name||"Release")+'</b> — '+esc(x.published_at||x.created_at||"")+(x.html_url?' — <a target="_blank" href="'+esc(x.html_url)+'">فتح</a>':"")+'</p>').join(""):'<div class="empty-state">لا توجد Releases.</div>';
+}
+
+async function testGithubHealth(){
+  if(!canAdmin()){msg("githubHealth","اختبار GitHub متاح للـ admin و owner فقط.");return}
+  setBusy("testGithubToken",true,"اختبار اتصال GitHub");
+  msg("githubHealth","جارٍ التحقق من GITHUB_TOKEN وصلاحيات GitHub…");
+  try{
+    const h=await gh("health");
+    const p=h.permissions||{};
+    msg("githubHealth","✅ GITHUB_TOKEN صالح · GitHub API: "+h.github_status+" · المستخدم: "+(h.authenticated_user||"—")+" · push: "+(p.push?"نعم":"لا")+" · admin: "+(p.admin?"نعم":"لا"));
+  }catch(e){msg("githubHealth","❌ فشل الاختبار: "+e.message)}
+  finally{setBusy("testGithubToken",false,"اختبار اتصال GitHub")}
 }
 
 async function loadSupabase(){
