@@ -3,7 +3,7 @@ const sb=window.supabase?.createClient(C.supabaseUrl,C.supabasePublishableKey,{
   auth:{
     persistSession:true,
     autoRefreshToken:true,
-    detectSessionInUrl:true,
+    detectSessionInUrl:false,
     flowType:"pkce"
   }
 });
@@ -110,15 +110,53 @@ async function githubLogin(){
   msg("loginMsg","جارٍ فتح GitHub لتسجيل الدخول…");
   try{
     const redirectTo="https://gpldroid.github.io/larachedev/admin/";
-    const {error}=await sb.auth.signInWithOAuth({
+    const {data,error}=await sb.auth.signInWithOAuth({
       provider:"github",
-      options:{redirectTo}
+      options:{redirectTo,skipBrowserRedirect:false}
     });
     if(error)throw error;
+    if(!data?.url)throw Error("لم يُرجع Supabase رابط تسجيل GitHub.");
   }catch(e){
     if(btn)btn.disabled=false;
     msg("loginMsg","❌ تعذر فتح GitHub: "+(e.message||"خطأ غير معروف"));
   }
+}
+
+async function consumeOAuthCallback(){
+  if(!sb)throw Error("Supabase JS غير متاح.");
+  const url=new URL(window.location.href);
+  const error=url.searchParams.get("error_description")||url.searchParams.get("error");
+  if(error){
+    history.replaceState(null,"",url.pathname);
+    throw Error(error);
+  }
+
+  const code=url.searchParams.get("code");
+  if(code){
+    const {data,error:exchangeError}=await sb.auth.exchangeCodeForSession(code);
+    history.replaceState(null,"",url.pathname);
+    if(exchangeError)throw Error(exchangeError.message);
+    if(!data.session)throw Error("تعذر إنشاء جلسة GitHub.");
+    return data.session;
+  }
+
+  const hash=url.hash.startsWith("#")?url.hash.slice(1):url.hash;
+  if(!hash)return null;
+  const h=new URLSearchParams(hash);
+  const hashError=h.get("error_description")||h.get("error");
+  if(hashError){
+    history.replaceState(null,"",url.pathname);
+    throw Error(hashError);
+  }
+  const accessToken=h.get("access_token");
+  const refreshToken=h.get("refresh_token");
+  if(!accessToken||!refreshToken)return null;
+
+  const {data,error:setError}=await sb.auth.setSession({access_token:accessToken,refresh_token:refreshToken});
+  history.replaceState(null,"",url.pathname);
+  if(setError)throw Error(setError.message);
+  if(!data.session)throw Error("تعذر إنشاء جلسة GitHub.");
+  return data.session;
 }
 
 $("#loginForm").onsubmit=async e=>{
@@ -126,8 +164,10 @@ $("#loginForm").onsubmit=async e=>{
   if(!sb)return msg("loginMsg","❌ تعذر تحميل Supabase Auth. تحقق من اتصال الشبكة ثم أعد تحميل الصفحة.");
   msg("loginMsg","جارٍ تسجيل الدخول…");
   try{
-    const {error}=await sb.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});
+    const {data,error}=await sb.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});
     if(error)throw error;
+    if(!data.session)throw Error("تمت المصادقة لكن لم يتم إنشاء جلسة.");
+    await start(data.session);
   }catch(e){msg("loginMsg",e.message||"فشل تسجيل الدخول.")}
 };
 
@@ -316,12 +356,27 @@ $("#dispatchWorkflow").onclick=async()=>{
 
 if(sb){
   sb.auth.onAuthStateChange((event,nextSession)=>{
-    if(event==="INITIAL_SESSION" || event==="SIGNED_IN"){
-      if(nextSession) start(nextSession);
-      else showLogin();
+    if(event==="TOKEN_REFRESHED" && nextSession){
+      session=nextSession;
     }
     if(event==="SIGNED_OUT"){
       session=null;role=null;showLogin();
     }
   });
 }
+
+(async()=>{
+  try{
+    const oauthSession=await consumeOAuthCallback();
+    if(oauthSession){
+      msg("loginMsg","تم تسجيل الدخول عبر GitHub، جارٍ التحقق من الصلاحيات…");
+      await start(oauthSession);
+      return;
+    }
+  }catch(e){
+    session=null;role=null;
+    msg("loginMsg","❌ "+(e.message||"فشل إكمال تسجيل الدخول عبر GitHub."));
+    return;
+  }
+  await start();
+})();
