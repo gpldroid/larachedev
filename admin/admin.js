@@ -8,7 +8,7 @@ const sb=window.supabase?.createClient(C.supabaseUrl,C.supabasePublishableKey,{
   }
 });
 
-let session=null,selected=null,branch=C.branch||"main",role=null,currentFiles=[];
+let session=null,selected=null,branch=C.branch||"main",role=null,currentFiles=[],starting=false;
 
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
@@ -78,7 +78,9 @@ function initTabs(){
 }
 
 async function start(){
-  if(!sb)return showLogin("تعذر تحميل Supabase JS.");
+  if(starting)return;
+  starting=true;
+  if(!sb){starting=false;return showLogin("تعذر تحميل Supabase JS. تحقق من اتصال الشبكة.");}
   const {data}=await sb.auth.getSession();session=data.session;
   if(!session)return showLogin();
   try{
@@ -89,6 +91,7 @@ async function start(){
     $("#supabaseStatus").textContent="READY";initTabs();applyRoleUI();
     await refreshOverview();
   }catch(e){await sb.auth.signOut({scope:"local"});session=null;role=null;showLogin(e.message)}
+  finally{starting=false}
 }
 
 function showLogin(error=""){ $("#loginView").hidden=false;$("#dashboardView").hidden=true;$("#logoutBtn").hidden=true;if(error)msg("loginMsg","❌ "+error)}
@@ -308,7 +311,7 @@ $("#dispatchWorkflow").onclick=async()=>{
 
 if(sb){
   sb.auth.onAuthStateChange((event,nextSession)=>{
-    if(event==="SIGNED_IN"||event==="TOKEN_REFRESHED"){
+    if(event==="SIGNED_IN"){
       session=nextSession;
       start();
     }
