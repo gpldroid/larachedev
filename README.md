@@ -317,34 +317,6 @@ GitHub
 
 ---
 
-# 📁 بنية المشروع
-
-المشروع مصمم ليكون خفيفًا وسهل التطوير والصيانة.
-
-```text
-larachedev/
-│
-├── index.html
-├── platforms.html
-├── instructions.html
-├── privacy.html
-├── terms.html
-├── sitemap.html
-├── 404.html
-│
-├── robots.txt
-├── sitemap.xml
-├── manifest.webmanifest
-├── favicon.svg
-│
-└── assets/
-    ├── css/
-    ├── js/
-    └── images/
-```
-
----
-
 # 🔗 الموقع الرسمي
 
 يمكن زيارة المنصة من خلال:
