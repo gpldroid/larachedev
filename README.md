@@ -324,7 +324,7 @@ GitHub
 مثال على البنية:
 
 ```text
-dev-v3/
+larachedev/
 │
 ├── index.html
 ├── platforms.html
