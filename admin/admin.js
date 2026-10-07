@@ -29,6 +29,19 @@ async function gh(action,query={}){
   return j;
 }
 
+async function refreshSession(){
+  if(!session?.refresh_token)return false;
+  try{
+    const r=await fetch(C.supabaseUrl+"/auth/v1/token?grant_type=refresh_token",{
+      method:"POST",headers:{apikey:C.supabasePublishableKey,"Content-Type":"application/json"},
+      body:JSON.stringify({refresh_token:session.refresh_token})
+    });
+    const j=await r.json();
+    if(!r.ok)throw Error(j.error_description||j.msg||j.error||"انتهت جلسة Supabase.");
+    session=j;localStorage.setItem("larachedev_session",JSON.stringify(j));return true;
+  }catch(e){localStorage.removeItem("larachedev_session");session=null;return false}
+}
+
 async function ghPost(action,body){
   if(!session?.access_token) throw Error("انتهت جلسة الدخول.");
   const r=await fetch(C.githubManager+"?action="+encodeURIComponent(action),{
@@ -70,6 +83,8 @@ function initTabs(){
 }
 
 async function start(){
+  if(!session?.access_token)return showLogin();
+  if(session?.refresh_token)await refreshSession();
   if(!session?.access_token)return showLogin();
   try{
     const a=await api("admin_users?select=role,enabled&user_id=eq."+encodeURIComponent(session.user.id));
@@ -130,7 +145,11 @@ $("#loginForm").onsubmit=async e=>{
   }catch(e){msg("loginMsg",e.message)}
 };
 
-$("#logoutBtn").onclick=()=>{localStorage.removeItem("larachedev_session");location.reload()};
+$("#logoutBtn").onclick=async()=>{
+  const token=session?.access_token;
+  try{if(token)await fetch(C.supabaseUrl+"/auth/v1/logout",{method:"POST",headers:{apikey:C.supabasePublishableKey,Authorization:"Bearer "+token}})}
+  finally{localStorage.removeItem("larachedev_session");session=null;role=null;location.reload()}
+};
 $("#githubLoginBtn").onclick=githubLogin;
 $("#refreshFrame").onclick=()=>{const f=$("#siteFrame");f.src=f.src};
 $("#testGithubToken").onclick=testGithubHealth;
