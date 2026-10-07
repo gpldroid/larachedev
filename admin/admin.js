@@ -1,5 +1,5 @@
 const C=window.LARACHEDEV_CONFIG||{};
-const sb=window.supabase?.createClient(C.supabaseUrl,C.supabasePublishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,flowType:"pkce"}});
+const sb=window.supabase?.createClient(C.supabaseUrl,C.supabasePublishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:"implicit"}});
 
 let session=null,selected=null,branch=C.branch||"main",role=null,currentFiles=[];
 
@@ -92,17 +92,12 @@ async function githubLogin(){
   if(btn)btn.disabled=true;
   msg("loginMsg","جارٍ فتح GitHub لتسجيل الدخول…");
   try{
-    const redirectTo=window.location.origin+window.location.pathname.replace(/\\/+$/,"/")||window.location.origin+"/larachedev/admin/";
-    const {data,error}=await sb.auth.signInWithOAuth({
+    const redirectTo="https://gpldroid.github.io/larachedev/admin/";
+    const {error}=await sb.auth.signInWithOAuth({
       provider:"github",
-      options:{
-        redirectTo,
-        skipBrowserRedirect:true
-      }
+      options:{redirectTo}
     });
     if(error)throw error;
-    if(!data?.url)throw Error("لم يُرجع Supabase رابط تسجيل GitHub.");
-    window.location.assign(data.url);
   }catch(e){
     if(btn)btn.disabled=false;
     msg("loginMsg","❌ تعذر فتح GitHub: "+(e.message||"خطأ غير معروف"));
