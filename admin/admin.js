@@ -1,5 +1,12 @@
 const C=window.LARACHEDEV_CONFIG||{};
-const sb=window.supabase?.createClient(C.supabaseUrl,C.supabasePublishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:"implicit"}});
+const sb=window.supabase?.createClient(C.supabaseUrl,C.supabasePublishableKey,{
+  auth:{
+    persistSession:true,
+    autoRefreshToken:true,
+    detectSessionInUrl:true,
+    flowType:"pkce"
+  }
+});
 
 let session=null,selected=null,branch=C.branch||"main",role=null,currentFiles=[];
 
@@ -87,7 +94,7 @@ async function start(){
 function showLogin(error=""){ $("#loginView").hidden=false;$("#dashboardView").hidden=true;$("#logoutBtn").hidden=true;if(error)msg("loginMsg","❌ "+error)}
 
 async function githubLogin(){
-  if(!sb)return msg("loginMsg","❌ Supabase Auth غير متاح.");
+  if(!sb)return msg("loginMsg","❌ تعذر تحميل Supabase Auth. تحقق من اتصال الشبكة ثم أعد تحميل الصفحة.");
   const btn=$("#githubLoginBtn");
   if(btn)btn.disabled=true;
   msg("loginMsg","جارٍ فتح GitHub لتسجيل الدخول…");
@@ -104,49 +111,15 @@ async function githubLogin(){
   }
 }
 
-async function consumeOAuthCallback(){
-  if(!sb)throw Error("Supabase JS غير متاح.");
-
-  // Support both PKCE (?code=...) and legacy/implicit (#access_token=...) callbacks.
-  // Some already-open/cached browser sessions can still return the implicit hash.
-  const p=new URLSearchParams(window.location.search);
-  const error=p.get("error_description")||p.get("error");
-  if(error){history.replaceState(null,"",window.location.pathname);throw Error(decodeURIComponent(error))}
-
-  const code=p.get("code");
-  if(code){
-    const {data,error:exchangeError}=await sb.auth.exchangeCodeForSession(code);
-    if(exchangeError)throw Error(exchangeError.message);
-    if(!data.session)throw Error("تعذر إنشاء جلسة GitHub.");
-    history.replaceState(null,"",window.location.pathname);
-    return true;
-  }
-
-  const hash=window.location.hash.startsWith("#")?window.location.hash.slice(1):window.location.hash;
-  if(!hash)return false;
-  const h=new URLSearchParams(hash);
-  const hashError=h.get("error_description")||h.get("error");
-  if(hashError){history.replaceState(null,"",window.location.pathname);throw Error(decodeURIComponent(hashError))}
-
-  const accessToken=h.get("access_token");
-  const refreshToken=h.get("refresh_token");
-  if(!accessToken||!refreshToken)return false;
-
-  // Convert the returned tokens into the normal Supabase local session immediately,
-  // then remove every OAuth token from the address bar/history.
-  const {data,error:setError}=await sb.auth.setSession({access_token:accessToken,refresh_token:refreshToken});
-  history.replaceState(null,"",window.location.pathname);
-  if(setError)throw Error(setError.message);
-  if(!data.session)throw Error("تعذر إنشاء جلسة GitHub.");
-  return true;
-}
-
 $("#loginForm").onsubmit=async e=>{
-  e.preventDefault();msg("loginMsg","جارٍ تسجيل الدخول…");
+  e.preventDefault();
+  if(!sb)return msg("loginMsg","❌ تعذر تحميل Supabase Auth. تحقق من اتصال الشبكة ثم أعد تحميل الصفحة.");
+  msg("loginMsg","جارٍ تسجيل الدخول…");
   try{
     const {data,error}=await sb.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});
     if(error)throw error;
-    session=data.session;await start();
+    session=data.session;
+    await start();
   }catch(e){msg("loginMsg",e.message||"فشل تسجيل الدخول.")}
 };
 
@@ -333,7 +306,15 @@ $("#dispatchWorkflow").onclick=async()=>{
   try{await ghPost("dispatch",{workflow,ref:branch});msg("workflowMsg","تم إرسال Workflow.");setTimeout(loadGitHub,1200)}catch(e){msg("workflowMsg","❌ "+e.message)}finally{setBusy("dispatchWorkflow",false,"تشغيل Workflow")}
 };
 
-(async()=>{
-  try{const oauth=await consumeOAuthCallback();if(oauth)msg("loginMsg","تم تسجيل الدخول عبر GitHub، جارٍ التحقق من الصلاحيات…")}catch(e){msg("loginMsg","❌ "+e.message)}
-  await start();
-})();
+if(sb){
+  sb.auth.onAuthStateChange((event,nextSession)=>{
+    if(event==="SIGNED_IN"||event==="TOKEN_REFRESHED"){
+      session=nextSession;
+      start();
+    }
+    if(event==="SIGNED_OUT"){
+      session=null;role=null;showLogin();
+    }
+  });
+}
+(async()=>{ await start(); })();
