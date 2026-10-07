@@ -95,16 +95,39 @@ async function githubLogin(){
 }
 
 async function consumeOAuthCallback(){
+  if(!sb)throw Error("Supabase JS غير متاح.");
+
+  // Support both PKCE (?code=...) and legacy/implicit (#access_token=...) callbacks.
+  // Some already-open/cached browser sessions can still return the implicit hash.
   const p=new URLSearchParams(window.location.search);
   const error=p.get("error_description")||p.get("error");
   if(error){history.replaceState(null,"",window.location.pathname);throw Error(decodeURIComponent(error))}
+
   const code=p.get("code");
-  if(!code)return false;
-  if(!sb)throw Error("Supabase JS غير متاح.");
-  const {data,error:exchangeError}=await sb.auth.exchangeCodeForSession(code);
-  if(exchangeError)throw Error(exchangeError.message);
-  if(!data.session)throw Error("تعذر إنشاء جلسة GitHub.");
+  if(code){
+    const {data,error:exchangeError}=await sb.auth.exchangeCodeForSession(code);
+    if(exchangeError)throw Error(exchangeError.message);
+    if(!data.session)throw Error("تعذر إنشاء جلسة GitHub.");
+    history.replaceState(null,"",window.location.pathname);
+    return true;
+  }
+
+  const hash=window.location.hash.startsWith("#")?window.location.hash.slice(1):window.location.hash;
+  if(!hash)return false;
+  const h=new URLSearchParams(hash);
+  const hashError=h.get("error_description")||h.get("error");
+  if(hashError){history.replaceState(null,"",window.location.pathname);throw Error(decodeURIComponent(hashError))}
+
+  const accessToken=h.get("access_token");
+  const refreshToken=h.get("refresh_token");
+  if(!accessToken||!refreshToken)return false;
+
+  // Convert the returned tokens into the normal Supabase local session immediately,
+  // then remove every OAuth token from the address bar/history.
+  const {data,error:setError}=await sb.auth.setSession({access_token:accessToken,refresh_token:refreshToken});
   history.replaceState(null,"",window.location.pathname);
+  if(setError)throw Error(setError.message);
+  if(!data.session)throw Error("تعذر إنشاء جلسة GitHub.");
   return true;
 }
 
