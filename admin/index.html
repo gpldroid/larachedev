@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LaracheDev Admin</title>
+<link rel="icon" href="../favicon.svg">
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+<div id="app">
+<header class="topbar">
+<div class="brand"><span class="dot"></span><div><strong>LaracheDev Admin</strong><small>GitHub + Supabase</small></div></div>
+<div class="top-actions"><a class="ghost" target="_blank" href="https://gpldroid.github.io/larachedev/">فتح الموقع</a><button id="logoutBtn" class="danger" hidden>تسجيل الخروج</button></div>
+</header>
+<main>
+<section class="notice warning"><strong>حالة الاتصال:</strong> الواجهة جاهزة، لكن لم يتم إنشاء مشروع Supabase مستقل بعد.<div>لا نستخدم مشاريع Quran أو Android حتى لا تختلط البيانات والصلاحيات.</div></section>
+<section id="loginView" class="panel login-card">
+<h1>تسجيل دخول الإدارة</h1><p>بعد ربط مشروع LaracheDev المستقل سيعمل Supabase Auth هنا.</p>
+<form id="loginForm"><label>البريد الإلكتروني<input id="email" type="email" required></label><label>كلمة المرور<input id="password" type="password" required></label><button class="primary" type="submit">تسجيل الدخول</button><div id="loginMsg" class="msg"></div></form>
+</section>
+<section id="dashboardView" hidden>
+<div class="grid stats">
+<article class="card"><span>Website Viewer</span><strong>جاهز</strong></article>
+<article class="card"><span>Files Manager</span><strong>جاهز</strong></article>
+<article class="card"><span>GitHub</span><strong>غير موصول</strong></article>
+<article class="card"><span>Supabase</span><strong>بانتظار المشروع</strong></article>
+</div>
+<nav class="tabs">
+<button data-tab="overview" class="active">نظرة عامة</button><button data-tab="viewer">Website Viewer</button><button data-tab="files">Website Files Manager</button><button data-tab="github">GitHub</button><button data-tab="supabase">Supabase</button><button data-tab="audit">Audit Log</button>
+</nav>
+<section id="tab-overview" class="tab panel"><h2>لوحة التحكم</h2><div class="grid two"><article class="card"><h3>المستودع</h3><p>gpldroid/larachedev</p><a target="_blank" href="https://github.com/gpldroid/larachedev">فتح GitHub</a></article><article class="card"><h3>الموقع</h3><p>gpldroid.github.io/larachedev</p><a target="_blank" href="https://gpldroid.github.io/larachedev/">فتح الموقع</a></article></div></section>
+<section id="tab-viewer" class="tab panel" hidden><div class="section-head"><h2>Website Viewer</h2><button id="refreshFrame" class="ghost">تحديث</button></div><iframe id="siteFrame" title="Website Viewer" src="https://gpldroid.github.io/larachedev/" loading="lazy"></iframe></section>
+<section id="tab-files" class="tab panel" hidden><div class="section-head"><h2>Website Files Manager</h2></div><div class="empty-state"><strong>واجهة مدير الملفات جاهزة</strong><p>ستدعم شجرة المستودع، القراءة، الإنشاء، التعديل، الحذف، branches وcommit عبر Edge Function آمنة.</p></div></section>
+<section id="tab-github" class="tab panel" hidden><h2>GitHub Control Center</h2><div class="grid two"><article class="card"><h3>Repository</h3><p>gpldroid/larachedev</p></article><article class="card"><h3>الأدوات</h3><p>Branches · Commits · Files · Actions · Releases · Logs</p></article></div></section>
+<section id="tab-supabase" class="tab panel" hidden><h2>Supabase Control Center</h2><div class="empty-state"><strong>بانتظار مشروع مستقل</strong><p>تم رفض إنشاء مشروع ثالث لأن حساب Free وصل إلى الحد الأقصى للمشاريع النشطة.</p></div></section>
+<section id="tab-audit" class="tab panel" hidden><h2>Audit Log</h2><div class="empty-state"><p>سيتم تسجيل عمليات الإدارة داخل Supabase مع RLS وRealtime بعد الربط.</p></div></section>
+</section>
+</main></div>
+<script src="./admin.js"></script>
+</body></html>
