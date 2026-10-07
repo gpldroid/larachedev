@@ -87,11 +87,26 @@ async function start(){
 function showLogin(error=""){ $("#loginView").hidden=false;$("#dashboardView").hidden=true;$("#logoutBtn").hidden=true;if(error)msg("loginMsg","❌ "+error)}
 
 async function githubLogin(){
-  if(!sb)return;
-  msg("loginMsg","جارٍ تحويلك إلى GitHub…");
-  const redirectTo=window.location.origin+window.location.pathname;
-  const {error}=await sb.auth.signInWithOAuth({provider:"github",options:{redirectTo}});
-  if(error)msg("loginMsg","❌ "+error.message);
+  if(!sb)return msg("loginMsg","❌ Supabase Auth غير متاح.");
+  const btn=$("#githubLoginBtn");
+  if(btn)btn.disabled=true;
+  msg("loginMsg","جارٍ فتح GitHub لتسجيل الدخول…");
+  try{
+    const redirectTo=window.location.origin+window.location.pathname.replace(/\\/+$/,"/")||window.location.origin+"/larachedev/admin/";
+    const {data,error}=await sb.auth.signInWithOAuth({
+      provider:"github",
+      options:{
+        redirectTo,
+        skipBrowserRedirect:true
+      }
+    });
+    if(error)throw error;
+    if(!data?.url)throw Error("لم يُرجع Supabase رابط تسجيل GitHub.");
+    window.location.assign(data.url);
+  }catch(e){
+    if(btn)btn.disabled=false;
+    msg("loginMsg","❌ تعذر فتح GitHub: "+(e.message||"خطأ غير معروف"));
+  }
 }
 
 async function consumeOAuthCallback(){
