@@ -89,6 +89,32 @@ function showLogin(){
   $("#loginView").hidden=false;$("#dashboardView").hidden=true;$("#logoutBtn").hidden=true;
 }
 
+function githubLogin(){
+  const redirectTo=window.location.origin+window.location.pathname;
+  const url=C.supabaseUrl+"/auth/v1/authorize?provider=github&redirect_to="+encodeURIComponent(redirectTo);
+  window.location.assign(url);
+}
+
+async function consumeGithubCallback(){
+  const hash=window.location.hash.replace(/^#/,"");
+  if(!hash)return false;
+  const p=new URLSearchParams(hash);
+  const access_token=p.get("access_token");
+  const refresh_token=p.get("refresh_token");
+  const error=p.get("error_description")||p.get("error");
+  if(error)throw Error(decodeURIComponent(error));
+  if(!access_token)return false;
+  const r=await fetch(C.supabaseUrl+"/auth/v1/user",{
+    headers:{apikey:C.supabasePublishableKey,Authorization:"Bearer "+access_token}
+  });
+  const u=await r.json();
+  if(!r.ok)throw Error(u?.message||u?.error_description||"تعذر الحصول على حساب GitHub عبر Supabase.");
+  session={access_token,refresh_token,user:u};
+  localStorage.setItem("larachedev_session",JSON.stringify(session));
+  history.replaceState(null,"",window.location.pathname+window.location.search);
+  return true;
+}
+
 $("#loginForm").onsubmit=async e=>{
   e.preventDefault();msg("loginMsg","جارٍ تسجيل الدخول…");
   try{
@@ -98,11 +124,18 @@ $("#loginForm").onsubmit=async e=>{
     });
     const j=await r.json();
     if(!r.ok)throw Error(j.error_description||j.msg||j.error||"فشل تسجيل الدخول.");
-    session=j;localStorage.setItem("larachedev_session",JSON.stringify(j));await start();
+    session=j;localStorage.setItem("larachedev_session",JSON.stringify(j));await (async()=>{
+  try{
+    const fromGithub=await consumeGithubCallback();
+    if(fromGithub)msg("loginMsg","تم تسجيل الدخول عبر GitHub، جارٍ التحقق من صلاحية الإدارة…");
+  }catch(e){msg("loginMsg","❌ "+e.message)}
+  await start();
+})();
   }catch(e){msg("loginMsg",e.message)}
 };
 
 $("#logoutBtn").onclick=()=>{localStorage.removeItem("larachedev_session");location.reload()};
+$("#githubLoginBtn").onclick=githubLogin;
 $("#refreshFrame").onclick=()=>{const f=$("#siteFrame");f.src=f.src};
 $("#testGithubToken").onclick=testGithubHealth;
 
