@@ -212,7 +212,7 @@ $("#dispatchWorkflow").onclick=async()=>{
   if(!confirm("تشغيل Workflow على الفرع "+branch+"؟"))return;
   setBusy("dispatchWorkflow",true,"تشغيل Workflow");
   try{
-    const j=await ghPost("dispatch",{workflow_id:workflow,ref:branch});
+    const j=await ghPost("dispatch",{workflow,ref:branch});
     msg("workflowMsg","تم إرسال طلب تشغيل Workflow.");
     setTimeout(loadGitHub,1500);
   }catch(e){msg("workflowMsg",e.message)}
