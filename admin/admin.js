@@ -77,21 +77,28 @@ function initTabs(){
   });
 }
 
-async function start(){
+async function start(nextSession=null){
   if(starting)return;
   starting=true;
   if(!sb){starting=false;return showLogin("تعذر تحميل Supabase JS. تحقق من اتصال الشبكة.");}
-  const {data}=await sb.auth.getSession();session=data.session;
-  if(!session)return showLogin();
   try{
+    if(nextSession!==null) session=nextSession;
+    else {
+      const {data,error}=await sb.auth.getSession();
+      if(error)throw error;
+      session=data.session;
+    }
+    if(!session)return showLogin();
     const a=await api("admin_users?select=role,enabled&user_id=eq."+encodeURIComponent(session.user.id));
     if(!a[0]?.enabled)throw Error("المستخدم غير مفعّل في admin_users.");
     role=a[0].role;
     $("#loginView").hidden=true;$("#dashboardView").hidden=false;$("#logoutBtn").hidden=false;
     $("#supabaseStatus").textContent="READY";initTabs();applyRoleUI();
     await refreshOverview();
-  }catch(e){await sb.auth.signOut({scope:"local"});session=null;role=null;showLogin(e.message)}
-  finally{starting=false}
+  }catch(e){
+    try{await sb.auth.signOut({scope:"local"})}catch{}
+    session=null;role=null;showLogin(e.message||"فشل التحقق من الجلسة.");
+  }finally{starting=false}
 }
 
 function showLogin(error=""){ $("#loginView").hidden=false;$("#dashboardView").hidden=true;$("#logoutBtn").hidden=true;if(error)msg("loginMsg","❌ "+error)}
@@ -119,10 +126,8 @@ $("#loginForm").onsubmit=async e=>{
   if(!sb)return msg("loginMsg","❌ تعذر تحميل Supabase Auth. تحقق من اتصال الشبكة ثم أعد تحميل الصفحة.");
   msg("loginMsg","جارٍ تسجيل الدخول…");
   try{
-    const {data,error}=await sb.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});
+    const {error}=await sb.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});
     if(error)throw error;
-    session=data.session;
-    await start();
   }catch(e){msg("loginMsg",e.message||"فشل تسجيل الدخول.")}
 };
 
@@ -311,13 +316,12 @@ $("#dispatchWorkflow").onclick=async()=>{
 
 if(sb){
   sb.auth.onAuthStateChange((event,nextSession)=>{
-    if(event==="SIGNED_IN"){
-      session=nextSession;
-      start();
+    if(event==="INITIAL_SESSION" || event==="SIGNED_IN"){
+      if(nextSession) start(nextSession);
+      else showLogin();
     }
     if(event==="SIGNED_OUT"){
       session=null;role=null;showLogin();
     }
   });
 }
-(async()=>{ await start(); })();
