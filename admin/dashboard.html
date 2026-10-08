@@ -103,7 +103,7 @@
           </div>
 
           <section class="panel deployment-panel" style="margin-top:18px">
-            <div class="panel-header"><h3>CMS Deployment</h3><span id="sync-state" class="pill">Checking…</span></div>
+            <div class="panel-header"><h3>CMS Deployment</h3><div class="content-actions"><span id="sync-state" class="pill">Checking…</span><button id="deploy-now" class="outline-button" type="button">نشر الآن</button></div></div>
             <div class="deployment-grid">
               <div><span>آخر مزامنة</span><strong id="sync-updated">—</strong></div>
               <div><span>Workflow</span><strong id="sync-workflow">CMS Content Sync</strong></div>
@@ -239,6 +239,23 @@ const $$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function showAlert(message,type="info"){const el=$("#alert");el.textContent=message;el.className="dashboard-alert "+type;el.hidden=false;clearTimeout(showAlert.timer);showAlert.timer=setTimeout(()=>el.hidden=true,4500)}
 function valueOf(key){const v=state.settings.get(key);return typeof v==="string"?v:(v?.value??v??"")}
+const EDGE_FUNCTION_URL=SUPABASE_URL+"/functions/v1/github-manager";
+async function callGitHubManager(action,options={}){
+  const{data:{session}}=await supabase.auth.getSession();
+  if(!session?.access_token)throw new Error("انتهت جلسة الإدارة. أعد تسجيل الدخول.");
+  const method=options.method||"GET";
+  const url=new URL(EDGE_FUNCTION_URL);
+  url.searchParams.set("action",action);
+  const init={method,headers:{Authorization:"Bearer "+session.access_token,"apikey":SUPABASE_KEY,"Content-Type":"application/json"}};
+  if(options.body!==undefined)init.body=JSON.stringify(options.body);
+  const response=await fetch(url,init);
+  let data={};try{data=await response.json()}catch{}
+  if(!response.ok)throw new Error(data.error||("GitHub Manager: HTTP "+response.status));
+  return data;
+}
+async function dispatchCms(){
+  return callGitHubManager("dispatch",{method:"POST",body:{workflow:"cms-pages.yml",ref:"main"}});
+}
 async function loadData(){
   const [settingsRes,adminsRes,auditRes]=await Promise.all([
     supabase.from("site_settings").select("id,key,value,updated_at").order("id"),
@@ -274,7 +291,9 @@ async function saveDesign(){
   const{error}=await supabase.from("site_settings").upsert({key:"site_design",value:design,updated_by:state.user.id,updated_at:new Date().toISOString()},{onConflict:"key"});
   if(error)throw error;
   await supabase.from("audit_logs").insert({actor_id:state.user.id,action:"update_design",resource:"site_design",details:{site_title:design.site_title,header_variant:design.header_variant}});
-  await loadData();showAlert("تم حفظ إعدادات التصميم. ستقوم GitHub Actions بنشرها تلقائياً.","success");
+  await loadData();
+  try{await dispatchCms();showAlert("تم حفظ التصميم وطلب نشره الآن عبر GitHub Actions.","success");await loadDeploymentStatus()}
+  catch(error){showAlert("تم حفظ التصميم، لكن تعذر طلب النشر: "+(error.message||error),"warning")}
 }
 function render(){
   const keys=["website_url","github_owner","github_repo","github_default_branch"];
@@ -341,6 +360,8 @@ async function guard(){
   $("#loading").hidden=true;$("#dashboard-app").hidden=false;
   await loadData();
   await loadContent();
+  await loadDeploymentStatus();
+  subscribeContentRealtime();
   await loadGitHubIdentity();
   return true;
 }
@@ -360,7 +381,7 @@ let contentItems=[];
 let contentDiscoveryCache=[];
 function contentValue(id){return document.getElementById(id).value.trim()}
 async function loadDeploymentStatus(){
-  const badge=$("#sync-state"),time=$("#sync-updated");
+  const badge=$("#sync-state"),time=$("#sync-updated"),button=$("#deploy-now");
   try{
     const r=await fetch("https://api.github.com/repos/gpldroid/larachedev/actions/runs?per_page=10");
     if(!r.ok) throw new Error("GitHub API "+r.status);
@@ -371,6 +392,13 @@ async function loadDeploymentStatus(){
     badge.className="pill "+(run.conclusion==="success"?"success":run.status==="in_progress"?"warning":"danger");
     time.textContent=new Date(run.updated_at).toLocaleString("ar-MA");
   }catch(e){badge.textContent="Unavailable";badge.className="pill warning";time.textContent="—"}
+}
+async function deployNow(){
+  const button=$("#deploy-now");if(!button)return;
+  button.disabled=true;button.textContent="جاري النشر…";
+  try{await dispatchCms();showAlert("تم إرسال طلب النشر إلى GitHub Actions.","success");await loadDeploymentStatus()}
+  catch(e){showAlert("تعذر بدء النشر: "+(e.message||e),"error")}
+  finally{button.disabled=false;button.textContent="نشر الآن"}
 }
 function subscribeContentRealtime(){
   supabase.channel("content-manager-live")
@@ -400,7 +428,8 @@ function renderContent(){
     return "<tr><td><div class='content-title-cell'><strong>"+esc(x.title)+"</strong><span>"+esc(x.slug)+(x.source_path?" · "+esc(x.source_path):"")+"</span></div></td><td><span class='type-badge'>"+esc(x.content_type)+"</span></td><td><span class='status-badge "+esc(x.status)+"'>"+statusLabel+"</span></td><td>"+source+"</td><td>"+new Date(x.updated_at).toLocaleString("ar-MA")+"</td><td><div class='table-actions'><button class='table-action' data-edit-content='"+x.id+"'>تعديل</button><button class='table-action danger' data-delete-content='"+x.id+"'>حذف</button></div></td></tr>"
   }).join("");
   $("#content-empty").hidden=rows.length>0;
-  $("[data-edit-content]").forEach(b=>b.addEventListener("click",()=>openContentEditor(b.dataset.editContent)));\n  $("[data-delete-content]").forEach(b=>b.addEventListener("click",async()=>{try{await deleteContent(b.dataset.deleteContent)}catch(e){showAlert("تعذر حذف المحتوى: "+(e.message||e),"error")}}));
+  $("#content-list [data-edit-content]").forEach(b=>b.addEventListener("click",()=>openContentEditor(b.dataset.editContent)));
+  $("#content-list [data-delete-content]").forEach(b=>b.addEventListener("click",async()=>{try{await deleteContent(b.dataset.deleteContent)}catch(e){showAlert("تعذر حذف المحتوى: "+(e.message||e),"error")}}));
 }
 function openContentEditor(id){
   const item=id?contentItems.find(x=>x.id===id):null;
@@ -446,7 +475,11 @@ async function saveContent(e){
   else result=await supabase.from("content_items").insert({...payload,author_id:state.user.id,discovery_source:"manual"}).select().single();
   if(result.error)throw result.error;
   await supabase.from("audit_logs").insert({actor_id:state.user.id,action:id?"update_content":"create_content",resource:"content_items",details:{id:result.data.id,title:payload.title,type:payload.content_type}});
-  closeContentEditor();await loadContent();showAlert("تم حفظ المحتوى بنجاح.","success");
+  closeContentEditor();await loadContent();
+  if(payload.status==="published"){
+    try{await dispatchCms();showAlert("تم حفظ المحتوى المنشور وطلب النشر الآن.","success");await loadDeploymentStatus()}
+    catch(error){showAlert("تم حفظ المحتوى، لكن تعذر طلب النشر: "+(error.message||error),"warning")}
+  }else showAlert("تم حفظ المحتوى بنجاح.","success");
 }
 async function deleteContent(id){
   if(!confirm("هل تريد حذف هذا المحتوى؟"))return;
@@ -544,7 +577,7 @@ $("#menu-button").addEventListener("click",()=>setSidebar(!$("#sidebar").classLi
 $("#sidebar-backdrop").addEventListener("click",()=>setSidebar(false));
 document.addEventListener("keydown",e=>{if(e.key==="Escape")setSidebar(false)});
 function toggleTheme(){document.body.classList.toggle("dark");localStorage.setItem("larache_admin_theme",document.body.classList.contains("dark")?"dark":"light")}
-$("#theme-button").addEventListener("click",toggleTheme);$("#theme-toggle-card").addEventListener("click",toggleTheme);
+$("#theme-button").addEventListener("click",toggleTheme);$("#theme-toggle-card")?.addEventListener("click",toggleTheme);
 $("#link-github").addEventListener("click",linkGitHub);
 if(localStorage.getItem("larache_admin_theme")==="dark")document.body.classList.add("dark");
 await guard();
