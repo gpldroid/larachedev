@@ -9,6 +9,7 @@
 </head>
 <body class="admin-body">
 <div class="app-shell">
+  <div class="mobile-sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
   <aside class="sidebar" id="sidebar">
     <div class="brand-block">
       <img src="../assets/LARACHE LOGO.webp" alt="LaracheDev">
@@ -530,7 +531,18 @@ $("#logout").addEventListener("click",async()=>{
     window.location.replace("./?logged_out=1");
   }
 });
-$("#menu-button").addEventListener("click",()=>$("#sidebar").classList.toggle("open"));
+function setSidebar(open){
+  const sidebar=$("#sidebar"),backdrop=$("#sidebar-backdrop"),button=$("#menu-button");
+  sidebar.classList.toggle("open",open);
+  backdrop.classList.toggle("open",open);
+  backdrop.setAttribute("aria-hidden",open?"false":"true");
+  button?.setAttribute("aria-expanded",open?"true":"false");
+  document.body.classList.toggle("sidebar-open",open);
+}
+$("#menu-button").setAttribute("aria-expanded","false");
+$("#menu-button").addEventListener("click",()=>setSidebar(!$("#sidebar").classList.contains("open")));
+$("#sidebar-backdrop").addEventListener("click",()=>setSidebar(false));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")setSidebar(false)});
 function toggleTheme(){document.body.classList.toggle("dark");localStorage.setItem("larache_admin_theme",document.body.classList.contains("dark")?"dark":"light")}
 $("#theme-button").addEventListener("click",toggleTheme);$("#theme-toggle-card").addEventListener("click",toggleTheme);
 $("#link-github").addEventListener("click",linkGitHub);
