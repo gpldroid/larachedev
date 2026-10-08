@@ -155,13 +155,43 @@
 </section>
 
 <section class="section-view" data-view="design">
-          <div class="section-heading"><div><h2>Design</h2><p>مركز التصميم العام للوحة الإدارة.</p></div></div>
-          <div class="module-grid">
-            <article class="module-card"><div class="module-icon">✦</div><h3>Admin Theme</h3><p>التصميم الحالي مطابق لهيكل CyberPanel-style: Sidebar، Header، Cards وQuick Actions.</p><button id="theme-toggle-card" class="outline-button">تبديل الوضع</button></article>
-            <article class="module-card"><div class="module-icon">▦</div><h3>Responsive</h3><p>الواجهة تتكيف مع الهاتف واللوحي وسطح المكتب.</p><span class="pill success">Responsive</span></article>
-            <article class="module-card"><div class="module-icon">◌</div><h3>Components</h3><p>المكونات موحدة في ملف CSS واحد للحفاظ على بنية خفيفة على GitHub Pages.</p><span class="pill success">Static / Fast</span></article>
-          </div>
-        </section>
+  <div class="section-heading">
+    <div><h2>Design Manager</h2><p>إدارة الهوية البصرية، الألوان، الخط، التنقل وSEO من Supabase ثم نشرها تلقائياً إلى GitHub Pages.</p></div>
+    <button class="primary-button" id="save-design">حفظ التصميم ونشره</button>
+  </div>
+  <article class="panel form-panel design-manager">
+    <div class="design-group"><h3>الهوية العامة</h3><div class="form-grid">
+      <label><span>اسم الموقع</span><input id="design-site-title"></label>
+      <label><span>وصف الموقع</span><input id="design-site-description"></label>
+      <label><span>مسار الشعار</span><input id="design-logo-path"></label>
+      <label><span>مسار Favicon</span><input id="design-favicon-path"></label>
+    </div></div>
+    <div class="design-group"><h3>الألوان والخط</h3><div class="form-grid">
+      <label><span>Primary Color</span><input id="design-primary" type="color"></label>
+      <label><span>Accent Color</span><input id="design-accent" type="color"></label>
+      <label><span>Background Color</span><input id="design-background" type="color"></label>
+      <label><span>Font Family</span><select id="design-font"><option>Cairo</option><option>Tajawal</option><option>IBM Plex Sans Arabic</option><option>system-ui</option></select></label>
+    </div></div>
+    <div class="design-group"><h3>Header / Footer</h3><div class="form-grid">
+      <label><span>Header Variant</span><select id="design-header"><option value="default">Default</option><option value="compact">Compact</option><option value="glass">Glass</option></select></label>
+      <label><span>لغة الموقع</span><input id="design-lang" value="ar"></label>
+      <label><span>Direction</span><select id="design-dir"><option value="rtl">RTL</option><option value="ltr">LTR</option></select></label>
+      <label><span>نص Footer</span><input id="design-footer-text"></label>
+    </div></div>
+    <div class="design-group"><h3>SEO</h3><div class="form-grid">
+      <label><span>SEO Title</span><input id="design-seo-title"></label>
+      <label><span>SEO Description</span><input id="design-seo-description"></label>
+    </div></div>
+    <div class="design-group"><h3>Navigation JSON</h3>
+      <p class="design-help">كل عنصر يجب أن يحتوي على <code>label</code> و <code>href</code>. الروابط التي تبدأ بـ # ستشير إلى الصفحة الرئيسية تلقائياً من الصفحات الداخلية.</p>
+      <textarea id="design-navigation" class="design-textarea" rows="9" spellcheck="false"></textarea>
+    </div>
+    <div class="design-group"><h3>Social Links</h3>
+      <div class="form-grid"><label><span>WhatsApp</span><input id="design-whatsapp" type="url"></label></div>
+    </div>
+    <div class="design-preview"><div class="design-preview-dot"></div><div><strong id="design-preview-title">Larache Web Dev</strong><span id="design-preview-meta">Preview of public design configuration</span></div></div>
+  </article>
+</section>
 
         <section class="section-view" data-view="security">
           <div class="section-heading"><div><h2>Security</h2><p>المصادقة والصلاحيات وحالة حماية البيانات.</p></div></div>
@@ -218,6 +248,31 @@ async function loadData(){
   state.admin=adminsRes.data?.find(x=>x.user_id===state.user.id)||null;
   state.audit=auditRes.data||[];
   render();
+  renderDesign();
+}
+function getDesign(){const v=state.settings.get("site_design");return v&&typeof v==="object"?v:{}}
+function setDesignField(id,value){const el=$(id);if(el)el.value=value??""}
+function renderDesign(){
+  const d=getDesign();
+  setDesignField("#design-site-title",d.site_title);setDesignField("#design-site-description",d.site_description);
+  setDesignField("#design-logo-path",d.logo_path);setDesignField("#design-favicon-path",d.favicon_path);
+  setDesignField("#design-primary",d.primary_color||"#5652d9");setDesignField("#design-accent",d.accent_color||"#6864e5");
+  setDesignField("#design-background",d.background_color||"#f2f3ff");setDesignField("#design-font",d.font_family||"Cairo");
+  setDesignField("#design-header",d.header_variant||"default");setDesignField("#design-lang",d.lang||"ar");setDesignField("#design-dir",d.dir||"rtl");
+  setDesignField("#design-footer-text",d.footer_text);setDesignField("#design-seo-title",d.seo_title);setDesignField("#design-seo-description",d.seo_description);
+  setDesignField("#design-navigation",JSON.stringify(d.navigation||[],null,2));setDesignField("#design-whatsapp",d.social?.whatsapp||"");
+  setDesignField("#design-preview-title",d.site_title||"Larache Web Dev");
+  const meta=$("#design-preview-meta");if(meta)meta.textContent=(d.font_family||"Cairo")+" · "+(d.header_variant||"default")+" · "+(d.dir||"rtl").toUpperCase();
+}
+async function saveDesign(){
+  let navigation=[];try{navigation=JSON.parse($("#design-navigation").value||"[]")}catch(e){throw new Error("Navigation JSON غير صالح")}
+  if(!Array.isArray(navigation)||navigation.some(x=>!x||typeof x.label!=="string"||typeof x.href!=="string"))throw new Error("Navigation يجب أن تكون مصفوفة من label و href");
+  const design={site_title:$("#design-site-title").value.trim(),site_description:$("#design-site-description").value.trim(),logo_path:$("#design-logo-path").value.trim(),favicon_path:$("#design-favicon-path").value.trim(),primary_color:$("#design-primary").value,accent_color:$("#design-accent").value,background_color:$("#design-background").value,font_family:$("#design-font").value,header_variant:$("#design-header").value,lang:$("#design-lang").value.trim()||"ar",dir:$("#design-dir").value,footer_text:$("#design-footer-text").value.trim(),seo_title:$("#design-seo-title").value.trim(),seo_description:$("#design-seo-description").value.trim(),navigation,social:{whatsapp:$("#design-whatsapp").value.trim()}};
+  if(!design.site_title)throw new Error("اسم الموقع مطلوب");
+  const{error}=await supabase.from("site_settings").upsert({key:"site_design",value:design,updated_by:state.user.id,updated_at:new Date().toISOString()},{onConflict:"key"});
+  if(error)throw error;
+  await supabase.from("audit_logs").insert({actor_id:state.user.id,action:"update_design",resource:"site_design",details:{site_title:design.site_title,header_variant:design.header_variant}});
+  await loadData();showAlert("تم حفظ إعدادات التصميم. ستقوم GitHub Actions بنشرها تلقائياً.","success");
 }
 function render(){
   const keys=["website_url","github_owner","github_repo","github_default_branch"];
@@ -415,6 +470,7 @@ $("#discover-content").addEventListener("click",discoverContent);
 $("#content-form").addEventListener("submit",async e=>{try{await saveContent(e)}catch(err){showAlert("تعذر حفظ المحتوى: "+(err.message||err),"error")}});
 ["#content-search","#content-type-filter","#content-status-filter"].forEach(s=>$(s).addEventListener(s.includes("search")?"input":"change",renderContent));
 $("#save-settings").addEventListener("click",async()=>{try{await saveSettings()}catch(e){showAlert("تعذر حفظ الإعدادات: "+(e.message||"خطأ غير معروف"),"error")}});
+$("#save-design").addEventListener("click",async()=>{try{await saveDesign()}catch(e){showAlert("تعذر حفظ التصميم: "+(e.message||"خطأ غير معروف"),"error")}});
 $("#refresh").addEventListener("click",async()=>{try{await loadData();showAlert("تم تحديث البيانات.","success")}catch(e){showAlert("تعذر تحديث البيانات.","error")}});
 $("#overview-refresh").addEventListener("click",()=>$("#refresh").click());
 $("#system-refresh").addEventListener("click",()=>$("#refresh").click());
