@@ -101,6 +101,14 @@
             </article>
           </div>
 
+          <section class="panel deployment-panel" style="margin-top:18px">
+            <div class="panel-header"><h3>CMS Deployment</h3><span id="sync-state" class="pill">Checking…</span></div>
+            <div class="deployment-grid">
+              <div><span>آخر مزامنة</span><strong id="sync-updated">—</strong></div>
+              <div><span>Workflow</span><strong id="sync-workflow">CMS Content Sync</strong></div>
+              <div><span>Pages</span><strong id="sync-pages">GitHub Pages</strong></div>
+            </div>
+          </section>
           <div class="section-heading compact"><div><h2>Site Overview</h2><p>القيم الحالية المحفوظة في Supabase.</p></div></div>
           <div class="settings-grid" id="overview-settings"></div>
         </section>
@@ -250,6 +258,26 @@ async function saveSettings(){
 let contentItems=[];
 let contentDiscoveryCache=[];
 function contentValue(id){return document.getElementById(id).value.trim()}
+async function loadDeploymentStatus(){
+  const badge=$("#sync-state"),time=$("#sync-updated");
+  try{
+    const r=await fetch("https://api.github.com/repos/gpldroid/larachedev/actions/runs?per_page=10");
+    if(!r.ok) throw new Error("GitHub API "+r.status);
+    const data=await r.json();
+    const run=(data.workflow_runs||[]).find(x=>x.path===".github/workflows/cms-pages.yml");
+    if(!run){badge.textContent="Not run";badge.className="pill";return}
+    badge.textContent=run.conclusion==="success"?"Healthy":run.status==="in_progress"?"Running":"Attention";
+    badge.className="pill "+(run.conclusion==="success"?"success":run.status==="in_progress"?"warning":"danger");
+    time.textContent=new Date(run.updated_at).toLocaleString("ar-MA");
+  }catch(e){badge.textContent="Unavailable";badge.className="pill warning";time.textContent="—"}
+}
+function subscribeContentRealtime(){
+  supabase.channel("content-manager-live")
+    .on("postgres_changes",{event:"*",schema:"public",table:"content_items"},async()=>{
+      await loadContent();
+      await loadDeploymentStatus();
+    }).subscribe();
+}
 async function loadContent(){
   const{data,error}=await supabase.from("content_items").select("*").order("updated_at",{ascending:false});
   if(error)throw error;
