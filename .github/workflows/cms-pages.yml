@@ -1,4 +1,5 @@
 name: CMS Content Sync and GitHub Pages
+# CMS source of truth: Supabase content_items
 
 on:
   workflow_dispatch:
