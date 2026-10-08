@@ -1,20 +1,17 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1020"><title>LaracheDev Control Center</title><link rel="icon" href="../favicon.svg"><link rel="stylesheet" href="./admin.css"></head><body>
-<div id="app"><header class="topbar"><div class="brand"><span class="dot"></span><div><strong>LaracheDev Control Center</strong><small>Modern Website Operations · GitHub + Supabase · Free Tier</small></div></div><div class="top-actions"><span id="roleBadge" class="badge">—</span><a class="ghost" target="_blank" href="https://gpldroid.github.io/larachedev/">فتح الموقع</a><button id="logoutBtn" class="danger" hidden>تسجيل الخروج</button></div></header>
+<div id="app"><header class="topbar"><div class="brand"><span class="dot"></span><strong>LaracheDev</strong></div><div class="top-actions"><span id="roleBadge" class="badge">—</span><a class="ghost" target="_blank" href="https://gpldroid.github.io/larachedev/">فتح الموقع</a><button id="logoutBtn" class="danger" hidden>تسجيل الخروج</button></div></header>
 <main><section id="loginView" class="auth-shell" aria-labelledby="loginTitle">
-  <div class="auth-brand"><div class="auth-mark" aria-hidden="true"><span></span><span></span><span></span></div><div><strong>LaracheDev</strong><small>Control Center</small></div></div>
   <div class="auth-card">
-    <div class="auth-intro"><span class="auth-kicker">ADMIN ACCESS</span><h1 id="loginTitle">مرحبًا بعودتك</h1><p>سجّل الدخول لإدارة الموقع والمستودع وعمليات النشر بأمان.</p></div>
-    <div id="loginMsg" class="auth-message" role="alert" aria-live="polite"></div>
+    <div class="auth-logo" aria-hidden="true"><span></span><span></span><span></span></div>
+    <h1 id="loginTitle">تسجيل الدخول</h1>
     <form id="loginForm" class="auth-form" novalidate>
-      <label for="email">البريد الإلكتروني<input id="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="admin@example.com" required></label>
+      <label for="email">البريد الإلكتروني<input id="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="name@example.com" required></label>
       <label for="password">كلمة المرور<span class="password-field"><input id="password" type="password" autocomplete="current-password" placeholder="••••••••" required minlength="6"><button id="togglePassword" class="password-toggle" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false">إظهار</button></span></label>
-      <button id="loginSubmit" class="primary auth-submit" type="submit">تسجيل الدخول</button>
+      <div id="loginMsg" class="auth-message" role="alert" aria-live="polite"></div>
+      <button id="loginSubmit" class="primary auth-submit" type="submit">دخول</button>
     </form>
-    <div class="auth-links"><button id="forgotPasswordBtn" class="text-button" type="button">نسيت كلمة المرور؟</button></div>
-    <div class="auth-security"><span class="security-icon" aria-hidden="true">✓</span><div><strong>وصول مخصص للإدارة</strong><small>يتحقق النظام من حسابك وصلاحياتك قبل فتح لوحة التحكم.</small></div></div>
-    <p class="auth-help">لست ضمن فريق الإدارة؟ تواصل مع مالك المنصة لمنحك الصلاحية.</p>
+    <button id="forgotPasswordBtn" class="text-button auth-forgot" type="button">نسيت كلمة المرور؟</button>
   </div>
-  <div class="auth-footer"><span>LaracheDev Control Center</span><span>Supabase Auth · RBAC</span></div>
 </section>
 <section id="dashboardView" hidden><div class="hero panel"><div><div class="eyebrow">CONTROL PLANE</div><h1>التحكم الكامل في LaracheDev</h1><p class="muted">مراقبة الموقع، الملفات، GitHub Actions، الفروع، الإعدادات، المستخدمين وسجل العمليات من مكان واحد.</p></div><div class="hero-actions"><button id="refreshAll" class="primary">↻ تحديث الكل</button><a class="ghost" target="_blank" href="https://github.com/gpldroid/larachedev/actions">Actions</a></div></div>
 <div class="grid stats"><article class="card metric"><span>Website</span><strong id="websiteState">LIVE</strong><small>GitHub Pages</small></article><article class="card metric"><span>Files</span><strong id="filesState">—</strong><small>Repository tree</small></article><article class="card metric"><span>Actions</span><strong id="runsState">—</strong><small>Latest runs</small></article><article class="card metric"><span>Supabase</span><strong id="supabaseStatus">READY</strong><small>Auth · DB · Edge</small></article></div>
