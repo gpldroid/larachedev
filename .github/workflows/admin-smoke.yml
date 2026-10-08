@@ -1,0 +1,23 @@
+name: Admin panel smoke tests
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'admin/**'
+      - 'supabase/migrations/**'
+      - 'tests/**'
+      - '.github/workflows/admin-smoke.yml'
+  pull_request:
+    paths:
+      - 'admin/**'
+      - 'supabase/migrations/**'
+      - 'tests/**'
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tests/admin-smoke.test.mjs
