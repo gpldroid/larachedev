@@ -146,14 +146,14 @@ function humanAuthError(error){
 }
 function showLogin(error=""){
   $("#loginView").hidden=false;$("#dashboardView").hidden=true;$("#logoutBtn").hidden=true;
-  const reset=$("#resetView");if(reset)reset.hidden=true;
+  const reset=$("#resetForm");if(reset)reset.hidden=true;
   const form=$("#loginForm");if(form)form.hidden=false;
   const forgot=$("#forgotPasswordBtn");if(forgot)forgot.hidden=false;
   if(error)msg("loginMsg","❌ "+humanAuthError(error));
 }
 function showRecovery(){
   $("#loginView").hidden=false;$("#dashboardView").hidden=true;$("#logoutBtn").hidden=true;
-  const form=$("#loginForm"),reset=$("#resetView"),forgot=$("#forgotPasswordBtn");
+  const form=$("#loginForm"),reset=$("#resetForm"),forgot=$("#forgotPasswordBtn");
   if(form)form.hidden=true;if(forgot)forgot.hidden=true;if(reset)reset.hidden=false;
   msg("loginMsg","");
 }
