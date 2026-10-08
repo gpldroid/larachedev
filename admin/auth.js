@@ -1,7 +1,7 @@
 import{createClient}from"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const SUPABASE_URL="https://tdvohzsmxlwupiuompdd.supabase.co";
-const SUPABASE_KEY=atob("c2JfcHVibGlzaGFibGVfdGJIQThXQW5PSWF1Y2RCbVlIWVNTZ18tb0NBbzVzYQ==");
+const SUPABASE_KEY=atob("c2JfcHVibGlzaGFibGVfdGJIQThXQW5PSWF1Y2RCbVlIWVNTZ18tb0NBbzVzYQ==".replace(" ",""));
 const REDIRECT_URL="https://gpldroid.github.io/larachedev/admin/";
 
 const supabase=createClient(SUPABASE_URL,SUPABASE_KEY,{
@@ -17,6 +17,7 @@ const form=document.querySelector("#login-form");
 const emailButton=document.querySelector("#email-button");
 const githubButton=document.querySelector("#github-button");
 const statusBox=document.querySelector("#status");
+let verificationInProgress=false;
 
 function show(message,type="info"){
   if(!statusBox)return;
@@ -29,30 +30,59 @@ function setBusy(value){
   if(githubButton)githubButton.disabled=value;
 }
 function cleanAuthUrl(){
-  const clean=window.location.pathname+window.location.search;
-  window.history.replaceState({},document.title,clean);
+  window.history.replaceState({},document.title,window.location.pathname);
 }
+
 async function verifyAdmin(session){
   if(!session?.user)return false;
-  show("جاري التحقق من صلاحيات الإدارة…");
-  const{data,isAdminError}=await (async()=>{
-    const r=await supabase.rpc("is_admin");
-    return{data:r.data,isAdminError:r.error};
-  })();
-  if(isAdminError){
-    console.error("is_admin RPC:",isAdminError);
-    await supabase.auth.signOut();
-    show("تعذر التحقق من صلاحية الإدارة. تحقق من دالة is_admin في Supabase.","error");
-    return false;
+  if(verificationInProgress)return false;
+  verificationInProgress=true;
+  try{
+    show("جاري التحقق من الحساب وصلاحيات الإدارة…");
+
+    const{data:user,error:userError}=await supabase.auth.getUser();
+    if(userError||!user){
+      console.error("getUser:",userError);
+      show("تعذر تأكيد هوية الحساب بعد تسجيل الدخول.","error");
+      return false;
+    }
+
+    const{data:isAdmin,error:isAdminError}=await supabase.rpc("is_admin");
+    if(isAdminError){
+      console.error("is_admin RPC:",isAdminError);
+      await supabase.auth.signOut({scope:"local"});
+      show("تعذر التحقق من صلاحية الإدارة. حدث خطأ في خدمة الصلاحيات.","error");
+      return false;
+    }
+
+    if(isAdmin!==true){
+      let identityText="";
+      try{
+        const{data,error}=await supabase.auth.getUserIdentities();
+        if(!error){
+          const github=(data?.identities||[]).find(x=>x.provider==="github");
+          const username=github?.identity_data?.user_name||github?.identity_data?.preferred_username;
+          if(username)identityText=" حساب GitHub المكتشف: "+username+".";
+        }
+      }catch(error){
+        console.warn("identity diagnostics:",error);
+      }
+      console.warn("Authenticated user is not an admin:",{
+        id:user.id,
+        email:user.email,
+        identities:user.identities
+      });
+      await supabase.auth.signOut({scope:"local"});
+      show("تم تسجيل الدخول، لكن هذا الحساب لا يملك صلاحية الإدارة."+identityText+" استخدم حساب GitHub المصرح به.","error");
+      return false;
+    }
+
+    cleanAuthUrl();
+    window.location.replace("./dashboard.html");
+    return true;
+  }finally{
+    verificationInProgress=false;
   }
-  if(data!==true){
-    await supabase.auth.signOut();
-    show("تم تسجيل الدخول، لكن هذا الحساب لا يملك صلاحية الإدارة.","error");
-    return false;
-  }
-  cleanAuthUrl();
-  window.location.replace("./dashboard.html");
-  return true;
 }
 
 async function handleInitialSession(){
@@ -104,6 +134,7 @@ githubButton?.addEventListener("click",async event=>{
   setBusy(true);
   show("جاري الاتصال بـ GitHub…");
   try{
+    await supabase.auth.signOut({scope:"local"});
     const{data,error}=await supabase.auth.signInWithOAuth({
       provider:"github",
       options:{
