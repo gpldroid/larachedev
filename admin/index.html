@@ -10,6 +10,12 @@
       <div id="loginMsg" class="auth-message" role="alert" aria-live="polite"></div>
       <button id="loginSubmit" class="primary auth-submit" type="submit">دخول</button>
     </form>
+    <form id="resetForm" class="auth-form" hidden>
+      <label for="newPassword">كلمة المرور الجديدة<input id="newPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="••••••••"></label>
+      <label for="confirmPassword">تأكيد كلمة المرور<input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="••••••••"></label>
+      <div id="resetMsg" class="auth-message" role="alert" aria-live="polite"></div>
+      <button id="resetSubmit" class="primary auth-submit" type="submit">تحديث كلمة المرور</button>
+    </form>
     <button id="forgotPasswordBtn" class="text-button auth-forgot" type="button">نسيت كلمة المرور؟</button>
   </div>
 </section>
@@ -23,4 +29,4 @@
 <section id="tab-supabase" class="tab panel" hidden><div class="section-head"><div><h2>Supabase Control Center</h2><p class="muted">Project state, settings and secure GitHub proxy.</p></div><button id="reloadSupabase" class="ghost">تحديث</button></div><div class="grid two"><article class="card"><b>Project</b><p>tdvohzsmxlwupiuompdd</p><p class="muted">Region: eu-west-2</p></article><article class="card"><b>Edge Function</b><p>github-manager · JWT protected · v12</p><button id="testGithubToken" class="primary">اختبار GitHub Token</button><div id="githubHealth" class="msg"></div></article></div><div class="grid two settings-layout"><article><h3>Site Settings</h3><div id="settingsData"></div></article><article class="card"><h3>تعديل إعداد</h3><label>Key<input id="settingKey" placeholder="site.title"></label><label>JSON Value<textarea id="settingValue" class="json-editor" placeholder='{"value":"..."}'></textarea></label><button id="saveSetting" class="primary">حفظ الإعداد</button><div id="settingMsg" class="msg"></div></article></div></section>
 <section id="tab-users" class="tab panel" hidden><div class="section-head"><div><h2>Admins & RBAC</h2><p class="muted">إدارة owner / admin / editor / viewer للحسابات الموجودة في Supabase Auth.</p></div><button id="reloadUsers" class="ghost">تحديث</button></div><div id="usersData" class="table-wrap"></div><div id="usersMsg" class="msg"></div></section>
 <section id="tab-audit" class="tab panel" hidden><div class="section-head"><div><h2>Audit Log</h2><p class="muted">سجل عمليات الإدارة على GitHub والملفات والإعدادات.</p></div><button id="reloadAudit" class="ghost">تحديث</button></div><div id="auditData" class="table-wrap"></div></section></section></main></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script>if(!window.supabase){document.write('<script src="https://unpkg.com/@supabase/supabase-js@2.117.2"><\\/script>')}</script><script src="./config.js"></script><script src="./admin.js?v=20261007-2215"></script></body></html>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script>if(!window.supabase){document.write('<script src="https://unpkg.com/@supabase/supabase-js@2.117.2"><\\/script>')}</script><script src="./config.js"></script><script src="./admin.js?v=20261008-0900"></script></body></html>
