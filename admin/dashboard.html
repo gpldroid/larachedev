@@ -268,10 +268,10 @@ function renderContent(){
   $("#content-list").innerHTML=rows.map(x=>{
     const statusLabel=x.status==="published"?"Published":x.status==="draft"?"Draft":"Archived";
     const source=x.discovery_source==="github"?"GitHub":x.discovery_source==="imported"?"Imported":"Manual";
-    return "<tr><td><div class='content-title-cell'><strong>"+esc(x.title)+"</strong><span>"+esc(x.slug)+(x.source_path?" · "+esc(x.source_path):"")+"</span></div></td><td><span class='type-badge'>"+esc(x.content_type)+"</span></td><td><span class='status-badge "+esc(x.status)+"'>"+statusLabel+"</span></td><td>"+source+"</td><td>"+new Date(x.updated_at).toLocaleString("ar-MA")+"</td><td><button class='table-action' data-edit-content='"+x.id+"'>تعديل</button></td></tr>"
+    return "<tr><td><div class='content-title-cell'><strong>"+esc(x.title)+"</strong><span>"+esc(x.slug)+(x.source_path?" · "+esc(x.source_path):"")+"</span></div></td><td><span class='type-badge'>"+esc(x.content_type)+"</span></td><td><span class='status-badge "+esc(x.status)+"'>"+statusLabel+"</span></td><td>"+source+"</td><td>"+new Date(x.updated_at).toLocaleString("ar-MA")+"</td><td><div class='table-actions'><button class='table-action' data-edit-content='"+x.id+"'>تعديل</button><button class='table-action danger' data-delete-content='"+x.id+"'>حذف</button></div></td></tr>"
   }).join("");
   $("#content-empty").hidden=rows.length>0;
-  $("[data-edit-content]").forEach(b=>b.addEventListener("click",()=>openContentEditor(b.dataset.editContent)));
+  $("[data-edit-content]").forEach(b=>b.addEventListener("click",()=>openContentEditor(b.dataset.editContent)));\n  $("[data-delete-content]").forEach(b=>b.addEventListener("click",async()=>{try{await deleteContent(b.dataset.deleteContent)}catch(e){showAlert("تعذر حذف المحتوى: "+(e.message||e),"error")}}));
 }
 function openContentEditor(id){
   const item=id?contentItems.find(x=>x.id===id):null;
@@ -333,7 +333,7 @@ function classifyHtml(path,htmlText){
   const hasArticle=!!doc.querySelector("article")||/article|post|blog/i.test(path);
   const type=hasArticle?"article":"page";
   const slug=path==="index.html"?"home":path.replace(/\.html$/i,"").replace(/[^a-z0-9\-_\/]/gi,"-").toLowerCase();
-  return {content_type:type,title,slug,excerpt:description,body:doc.body?.innerHTML||"",body_format:"html",status:"published",source_path:path,discovery_source:"github",seo_title:title,seo_description:description,metadata:{discovered:true}};
+  return {content_type:type,title,slug,excerpt:description,body:doc.body?.innerHTML||"",body_format:"html",status:"published",source_path:path,discovery_source:"github",seo_title:title,seo_description:description,metadata:{discovered:true,cms_managed:true}};
 }
 async function discoverContent(){
   const button=$("#discover-content");button.disabled=true;button.textContent="جاري الاكتشاف…";
@@ -353,7 +353,7 @@ async function discoverContent(){
       const existing=contentItems.find(x=>x.slug===item.slug||x.source_path===item.source_path);
       if(existing){
         const managed=existing.metadata?.cms_managed===true;
-        const patch={title:item.title,excerpt:item.excerpt,source_path:item.source_path,discovery_source:"github",metadata:{...existing.metadata,discovered:true},updated_at:new Date().toISOString()};
+        const patch={title:item.title,excerpt:item.excerpt,source_path:item.source_path,discovery_source:"github",metadata:{...existing.metadata,discovered:true,cms_managed:true},updated_at:new Date().toISOString()};
         if(!managed && !existing.body) patch.body=item.body;
         if(!managed && !existing.seo_title) patch.seo_title=item.seo_title;
         if(!managed && !existing.seo_description) patch.seo_description=item.seo_description;
