@@ -8,7 +8,7 @@ const sb=window.supabase?.createClient(C.supabaseUrl,C.supabasePublishableKey,{
   }
 });
 
-let session=null,selected=null,branch=C.branch||"main",role=null,currentFiles=[],starting=false;
+let session=null,selected=null,branch=C.branch||"main",role=null,currentFiles=[],starting=false,recoveryCooldownUntil=0;
 
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
@@ -139,7 +139,7 @@ function humanAuthError(error){
   if(!raw)return "";
   if(text.includes("invalid login credentials"))return "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
   if(text.includes("email not confirmed"))return "يجب تأكيد البريد الإلكتروني قبل تسجيل الدخول.";
-  if(text.includes("too many requests")||text.includes("rate limit"))return "تم تجاوز عدد محاولات الدخول المسموح بها. انتظر قليلًا ثم حاول مرة أخرى.";
+  if(text.includes("for security purposes")||text.includes("rate limit")||text.includes("too many requests"))return "تم تجاوز مهلة الأمان المؤقتة. انتظر قليلًا ثم أعد المحاولة.";
   if(text.includes("network")||text.includes("failed to fetch"))return "تعذر الاتصال بخدمة المصادقة. تحقق من اتصال الإنترنت وحاول مرة أخرى.";
   if(text.includes("not registered")||text.includes("غير مسجل"))return "تم تسجيل الدخول بنجاح، لكن هذا الحساب غير مصرح له بدخول لوحة الإدارة.";
   return raw;
