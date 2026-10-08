@@ -536,7 +536,7 @@ function activate(name){
   $$(".nav-item[data-section]").forEach(x=>x.classList.toggle("active",x.dataset.section===name));
   $$(".section-view").forEach(x=>x.classList.toggle("active",x.dataset.view===name));
   $("#breadcrumb").textContent=name[0].toUpperCase()+name.slice(1);
-  $("#sidebar").classList.remove("open");
+  setSidebar(false);
   window.scrollTo({top:0,behavior:"smooth"});
 }
 $$(".nav-item[data-section]").forEach(b=>b.addEventListener("click",()=>activate(b.dataset.section)));
