@@ -174,6 +174,8 @@ $("#loginForm").onsubmit=async e=>{
   finally{submit.disabled=false;}
 };
 
+$("#githubLoginBtn").onclick=async()=>{if(!sb)return msg("loginMsg","❌ خدمة المصادقة غير متاحة حاليًا.");const button=$("#githubLoginBtn");button.disabled=true;msg("loginMsg","جارٍ تحويلك إلى GitHub…");try{const {data,error}=await sb.auth.signInWithOAuth({provider:"github",options:{redirectTo:"https://gpldroid.github.io/larachedev/admin/"}});if(error)throw error;if(!data?.url)throw Error("تعذر بدء تسجيل الدخول عبر GitHub.");}catch(e){button.disabled=false;msg("loginMsg","❌ "+humanAuthError(e));}};
+
 $("#togglePassword").addEventListener("click",e=>{
   e.preventDefault();
   const input=$("#password"),button=$("#togglePassword");
