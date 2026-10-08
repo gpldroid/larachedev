@@ -306,6 +306,7 @@ async function saveContent(e){
     status:contentValue("content-status"),
     seo_title:contentValue("content-seo-title")||null,
     seo_description:contentValue("content-seo-description")||null,
+    metadata:{cms_managed:true,edited_from_admin:true},
     updated_by:state.user.id,
     published_at:contentValue("content-status")==="published"?new Date().toISOString():null,
     updated_at:new Date().toISOString()
@@ -351,7 +352,12 @@ async function discoverContent(){
     for(const item of discovered){
       const existing=contentItems.find(x=>x.slug===item.slug||x.source_path===item.source_path);
       if(existing){
-        const{error}=await supabase.from("content_items").update({title:item.title,excerpt:item.excerpt,source_path:item.source_path,discovery_source:"github",metadata:{...existing.metadata,discovered:true},updated_at:new Date().toISOString()}).eq("id",existing.id);
+        const managed=existing.metadata?.cms_managed===true;
+        const patch={title:item.title,excerpt:item.excerpt,source_path:item.source_path,discovery_source:"github",metadata:{...existing.metadata,discovered:true},updated_at:new Date().toISOString()};
+        if(!managed && !existing.body) patch.body=item.body;
+        if(!managed && !existing.seo_title) patch.seo_title=item.seo_title;
+        if(!managed && !existing.seo_description) patch.seo_description=item.seo_description;
+        const{error}=await supabase.from("content_items").update(patch).eq("id",existing.id);
         if(error)throw error;
       }else{
         const{error}=await supabase.from("content_items").insert(item);
