@@ -122,16 +122,31 @@
         </section>
 
         <section class="section-view" data-view="content">
-          <div class="section-heading"><div><h2>Content</h2><p>منطقة إدارة المحتوى، مهيأة للتوسع دون خلطها مع إعدادات النظام.</p></div></div>
-          <div class="module-grid">
-            <article class="module-card"><div class="module-icon">▤</div><h3>Pages</h3><p>إدارة صفحات الموقع الحالية ومحتواها.</p><span class="pill">جاهز للربط</span></article>
-            <article class="module-card"><div class="module-icon">▣</div><h3>Media</h3><p>الصور والملفات والموارد المستخدمة في الموقع.</p><span class="pill">جاهز للربط</span></article>
-            <article class="module-card"><div class="module-icon">◇</div><h3>Navigation</h3><p>تنظيم روابط الموقع والقوائم الرئيسية.</p><span class="pill">جاهز للربط</span></article>
-          </div>
-          <div class="notice-box"><strong>مهم:</strong> لم أضع محررًا وهميًا هنا. لا توجد حاليًا جداول محتوى في Supabase، لذلك هذه المنطقة منفصلة حتى نضيف schema المحتوى المطلوب فقط عندما تحدد حقوله.</div>
-        </section>
+  <div class="section-heading">
+    <div><h2>Content Manager</h2><p>اكتشاف وإدارة صفحات الموقع والمقالات من قاعدة محتوى واحدة.</p></div>
+    <div class="content-actions"><button class="outline-button" id="discover-content">اكتشاف محتوى الموقع</button><button class="primary-button" id="new-content">+ إضافة محتوى</button></div>
+  </div>
+  <div class="content-stats">
+    <div class="content-stat"><b id="content-total">0</b><span>إجمالي المحتوى</span></div>
+    <div class="content-stat"><b id="content-pages">0</b><span>صفحات</span></div>
+    <div class="content-stat"><b id="content-articles">0</b><span>مقالات</span></div>
+    <div class="content-stat"><b id="content-published">0</b><span>منشور</span></div>
+  </div>
+  <article class="panel content-manager">
+    <div class="content-toolbar">
+      <input id="content-search" class="content-search" type="search" placeholder="ابحث بالعنوان أو slug أو المسار…">
+      <select id="content-type-filter"><option value="">كل الأنواع</option><option value="page">Pages</option><option value="article">Articles</option></select>
+      <select id="content-status-filter"><option value="">كل الحالات</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select>
+    </div>
+    <div class="content-table-wrap">
+      <table class="content-table"><thead><tr><th>المحتوى</th><th>النوع</th><th>الحالة</th><th>المصدر</th><th>آخر تعديل</th><th></th></tr></thead><tbody id="content-list"></tbody></table>
+    </div>
+    <div id="content-empty" class="empty-state" hidden>لا يوجد محتوى مطابق للفلاتر الحالية.</div>
+  </article>
+  <div class="notice-box"><strong>الاكتشاف:</strong> يقوم النظام بفحص ملفات HTML الحالية في مستودع GitHub العام، يستخرج العنوان والوصف والمسار، ثم يضيف العناصر المكتشفة إلى Content Manager. تحرير المحتوى هنا يحفظ نسخة CMS في Supabase؛ ربط النشر النهائي بملفات GitHub سيتم عبر طبقة Sync آمنة حتى لا نضع GitHub tokens داخل المتصفح.</div>
+</section>
 
-        <section class="section-view" data-view="design">
+<section class="section-view" data-view="design">
           <div class="section-heading"><div><h2>Design</h2><p>مركز التصميم العام للوحة الإدارة.</p></div></div>
           <div class="module-grid">
             <article class="module-card"><div class="module-icon">✦</div><h3>Admin Theme</h3><p>التصميم الحالي مطابق لهيكل CyberPanel-style: Sidebar، Header، Cards وQuick Actions.</p><button id="theme-toggle-card" class="outline-button">تبديل الوضع</button></article>
@@ -217,6 +232,7 @@ async function guard(){
   $("#security-auth").textContent="الجلسة نشطة للحساب: "+(user.email||"GitHub user");
   $("#loading").hidden=true;$("#dashboard-app").hidden=false;
   await loadData();
+  await loadContent();
   return true;
 }
 async function saveSettings(){
@@ -230,6 +246,125 @@ async function saveSettings(){
   await supabase.from("audit_logs").insert({actor_id:user.id,action:"update_settings",resource:"site_settings",details:{keys:changes.map(x=>x.key)}});
   await loadData();showAlert("تم حفظ إعدادات الموقع بنجاح.","success");
 }
+
+let contentItems=[];
+let contentDiscoveryCache=[];
+function contentValue(id){return document.getElementById(id).value.trim()}
+async function loadContent(){
+  const{data,error}=await supabase.from("content_items").select("*").order("updated_at",{ascending:false});
+  if(error)throw error;
+  contentItems=data||[];
+  renderContent();
+}
+function renderContent(){
+  const q=contentValue("content-search").toLowerCase();
+  const type=$("#content-type-filter").value;
+  const status=$("#content-status-filter").value;
+  const rows=contentItems.filter(x=>(!type||x.content_type===type)&&(!status||x.status===status)&&(!q||[x.title,x.slug,x.source_path,x.excerpt].join(" ").toLowerCase().includes(q)));
+  $("#content-total").textContent=contentItems.length;
+  $("#content-pages").textContent=contentItems.filter(x=>x.content_type==="page").length;
+  $("#content-articles").textContent=contentItems.filter(x=>x.content_type==="article").length;
+  $("#content-published").textContent=contentItems.filter(x=>x.status==="published").length;
+  $("#content-list").innerHTML=rows.map(x=>{
+    const statusLabel=x.status==="published"?"Published":x.status==="draft"?"Draft":"Archived";
+    const source=x.discovery_source==="github"?"GitHub":x.discovery_source==="imported"?"Imported":"Manual";
+    return "<tr><td><div class='content-title-cell'><strong>"+esc(x.title)+"</strong><span>"+esc(x.slug)+(x.source_path?" · "+esc(x.source_path):"")+"</span></div></td><td><span class='type-badge'>"+esc(x.content_type)+"</span></td><td><span class='status-badge "+esc(x.status)+"'>"+statusLabel+"</span></td><td>"+source+"</td><td>"+new Date(x.updated_at).toLocaleString("ar-MA")+"</td><td><button class='table-action' data-edit-content='"+x.id+"'>تعديل</button></td></tr>"
+  }).join("");
+  $("#content-empty").hidden=rows.length>0;
+  $("[data-edit-content]").forEach(b=>b.addEventListener("click",()=>openContentEditor(b.dataset.editContent)));
+}
+function openContentEditor(id){
+  const item=id?contentItems.find(x=>x.id===id):null;
+  $("#content-id").value=item?.id||"";
+  $("#content-content-type").value=item?.content_type||"page";
+  $("#content-status").value=item?.status||"draft";
+  $("#content-title").value=item?.title||"";
+  $("#content-slug").value=item?.slug||"";
+  $("#content-source-path").value=item?.source_path||"";
+  $("#content-body-format").value=item?.body_format||"html";
+  $("#content-excerpt").value=item?.excerpt||"";
+  $("#content-body").value=item?.body||"";
+  $("#content-seo-title").value=item?.seo_title||"";
+  $("#content-seo-description").value=item?.seo_description||"";
+  $("#content-editor-meta").textContent=item?"آخر تعديل: "+new Date(item.updated_at).toLocaleString("ar-MA")+" · المصدر: "+(item.discovery_source||"manual"):"سيتم إنشاء نسخة أولى عند الحفظ.";
+  $("#content-modal-title").textContent=item?"تعديل المحتوى":"إضافة محتوى جديد";
+  $("#content-modal").hidden=false;
+  document.body.classList.add("modal-open");
+}
+function closeContentEditor(){$("#content-modal").hidden=true;document.body.classList.remove("modal-open")}
+async function saveContent(e){
+  e.preventDefault();
+  const id=contentValue("content-id");
+  const payload={
+    content_type:contentValue("content-content-type"),
+    title:contentValue("content-title"),
+    slug:contentValue("content-slug").replace(/^\/+|\/+$/g,""),
+    source_path:contentValue("content-source-path")||null,
+    body_format:contentValue("content-body-format"),
+    excerpt:contentValue("content-excerpt"),
+    body:contentValue("content-body"),
+    status:contentValue("content-status"),
+    seo_title:contentValue("content-seo-title")||null,
+    seo_description:contentValue("content-seo-description")||null,
+    updated_by:state.user.id,
+    published_at:contentValue("content-status")==="published"?new Date().toISOString():null,
+    updated_at:new Date().toISOString()
+  };
+  if(!payload.slug)throw new Error("Slug مطلوب");
+  let result;
+  if(id) result=await supabase.from("content_items").update(payload).eq("id",id).select().single();
+  else result=await supabase.from("content_items").insert({...payload,author_id:state.user.id,discovery_source:"manual"}).select().single();
+  if(result.error)throw result.error;
+  await supabase.from("audit_logs").insert({actor_id:state.user.id,action:id?"update_content":"create_content",resource:"content_items",details:{id:result.data.id,title:payload.title,type:payload.content_type}});
+  closeContentEditor();await loadContent();showAlert("تم حفظ المحتوى بنجاح.","success");
+}
+async function deleteContent(id){
+  if(!confirm("هل تريد حذف هذا المحتوى؟"))return;
+  const{error}=await supabase.from("content_items").delete().eq("id",id);
+  if(error)throw error;
+  await supabase.from("audit_logs").insert({actor_id:state.user.id,action:"delete_content",resource:"content_items",details:{id}});
+  await loadContent();showAlert("تم حذف المحتوى.","success");
+}
+function classifyHtml(path,htmlText){
+  const doc=new DOMParser().parseFromString(htmlText,"text/html");
+  const title=(doc.querySelector("title")?.textContent||path.replace(/\.html$/i,"")).trim();
+  const description=(doc.querySelector('meta[name="description"]')?.getAttribute("content")||"").trim();
+  const hasArticle=!!doc.querySelector("article")||/article|post|blog/i.test(path);
+  const type=hasArticle?"article":"page";
+  const slug=path==="index.html"?"home":path.replace(/\.html$/i,"").replace(/[^a-z0-9\-_\/]/gi,"-").toLowerCase();
+  return {content_type:type,title,slug,excerpt:description,body:doc.body?.innerHTML||"",body_format:"html",status:"published",source_path:path,discovery_source:"github",seo_title:title,seo_description:description,metadata:{discovered:true}};
+}
+async function discoverContent(){
+  const button=$("#discover-content");button.disabled=true;button.textContent="جاري الاكتشاف…";
+  try{
+    const res=await fetch("https://api.github.com/repos/gpldroid/larachedev/contents",{headers:{"Accept":"application/vnd.github+json"}});
+    if(!res.ok)throw new Error("GitHub API: "+res.status);
+    const files=await res.json();
+    const htmlFiles=files.filter(x=>x.type==="file"&&/\.html$/i.test(x.name)&&x.name!=="404.html");
+    const discovered=[];
+    for(const file of htmlFiles){
+      const raw=await fetch("https://raw.githubusercontent.com/gpldroid/larachedev/main/"+encodeURIComponent(file.name));
+      if(!raw.ok)continue;
+      discovered.push(classifyHtml(file.name,await raw.text()));
+    }
+    let imported=0;
+    for(const item of discovered){
+      const existing=contentItems.find(x=>x.slug===item.slug||x.source_path===item.source_path);
+      if(existing){
+        const{error}=await supabase.from("content_items").update({title:item.title,excerpt:item.excerpt,source_path:item.source_path,discovery_source:"github",metadata:{...existing.metadata,discovered:true},updated_at:new Date().toISOString()}).eq("id",existing.id);
+        if(error)throw error;
+      }else{
+        const{error}=await supabase.from("content_items").insert(item);
+        if(error&&error.code!=="23505")throw error;
+        if(!error)imported++;
+      }
+    }
+    await loadContent();
+    showAlert("اكتمل اكتشاف الموقع: "+discovered.length+" ملف HTML، تمت إضافة "+imported+" عنصر جديد.","success");
+  }catch(e){showAlert("فشل اكتشاف محتوى الموقع: "+(e.message||e),"error")}
+  finally{button.disabled=false;button.textContent="اكتشاف محتوى الموقع"}
+}
+
 function activate(name){
   $$(".nav-item[data-section]").forEach(x=>x.classList.toggle("active",x.dataset.section===name));
   $$(".section-view").forEach(x=>x.classList.toggle("active",x.dataset.view===name));
@@ -239,6 +374,12 @@ function activate(name){
 }
 $$(".nav-item[data-section]").forEach(b=>b.addEventListener("click",()=>activate(b.dataset.section)));
 $$("[data-section-target]").forEach(b=>b.addEventListener("click",()=>activate(b.dataset.sectionTarget)));
+$("[data-close-content]").forEach(x=>x.addEventListener("click",closeContentEditor));
+$("#close-content").addEventListener("click",closeContentEditor);
+$("#new-content").addEventListener("click",()=>openContentEditor());
+$("#discover-content").addEventListener("click",discoverContent);
+$("#content-form").addEventListener("submit",async e=>{try{await saveContent(e)}catch(err){showAlert("تعذر حفظ المحتوى: "+(err.message||err),"error")}});
+["#content-search","#content-type-filter","#content-status-filter"].forEach(s=>$(s).addEventListener(s.includes("search")?"input":"change",renderContent));
 $("#save-settings").addEventListener("click",async()=>{try{await saveSettings()}catch(e){showAlert("تعذر حفظ الإعدادات: "+(e.message||"خطأ غير معروف"),"error")}});
 $("#refresh").addEventListener("click",async()=>{try{await loadData();showAlert("تم تحديث البيانات.","success")}catch(e){showAlert("تعذر تحديث البيانات.","error")}});
 $("#overview-refresh").addEventListener("click",()=>$("#refresh").click());
@@ -250,5 +391,28 @@ $("#theme-button").addEventListener("click",toggleTheme);$("#theme-toggle-card")
 if(localStorage.getItem("larache_admin_theme")==="dark")document.body.classList.add("dark");
 await guard();
 </script>
+<div id="content-modal" class="content-modal" hidden>
+  <div class="content-modal-backdrop" data-close-content></div>
+  <div class="content-modal-card" role="dialog" aria-modal="true" aria-labelledby="content-modal-title">
+    <div class="content-modal-head"><div><span class="eyebrow">Content Manager</span><h2 id="content-modal-title">إضافة محتوى</h2></div><button class="icon-button" id="close-content" type="button">×</button></div>
+    <form id="content-form">
+      <input id="content-id" type="hidden">
+      <div class="form-grid">
+        <label><span>النوع</span><select id="content-content-type"><option value="page">Page</option><option value="article">Article</option></select></label>
+        <label><span>الحالة</span><select id="content-status"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
+        <label><span>العنوان</span><input id="content-title" required></label>
+        <label><span>Slug</span><input id="content-slug" required pattern="[a-z0-9\-_/]+"></label>
+        <label><span>Source Path</span><input id="content-source-path" placeholder="example.html"></label>
+        <label><span>صيغة المحتوى</span><select id="content-body-format"><option value="html">HTML</option><option value="markdown">Markdown</option><option value="text">Text</option></select></label>
+        <label class="full"><span>Excerpt / Description</span><textarea id="content-excerpt" rows="3"></textarea></label>
+        <label class="full"><span>المحتوى</span><textarea id="content-body" rows="13" placeholder="اكتب HTML أو Markdown حسب الصيغة المحددة…"></textarea></label>
+        <label><span>SEO Title</span><input id="content-seo-title"></label>
+        <label><span>SEO Description</span><input id="content-seo-description"></label>
+      </div>
+      <div class="editor-meta" id="content-editor-meta"></div>
+      <div class="content-modal-actions"><button type="button" class="outline-button" data-close-content>إلغاء</button><button type="submit" class="primary-button">حفظ المحتوى</button></div>
+    </form>
+  </div>
+</div>
 </body>
 </html>
