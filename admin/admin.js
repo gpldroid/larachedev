@@ -201,22 +201,6 @@ $("#resetForm").onsubmit=async e=>{
   finally{button.disabled=false;}
 };
 
-$("#resetForm").onsubmit=async e=>{
-  e.preventDefault();
-  if(!sb)return;
-  const password=$("#newPassword").value,confirmPassword=$("#confirmPassword").value;
-  if(password.length<8)return msg("resetMsg","كلمة المرور يجب أن تكون 8 أحرف على الأقل.");
-  if(password!==confirmPassword)return msg("resetMsg","كلمتا المرور غير متطابقتين.");
-  const button=$("#resetSubmit");button.disabled=true;msg("resetMsg","جارٍ تحديث كلمة المرور…");
-  try{
-    const {error}=await sb.auth.updateUser({password});
-    if(error)throw error;
-    msg("resetMsg","تم تغيير كلمة المرور. جارٍ فتح لوحة التحكم…");
-    setTimeout(()=>start(),500);
-  }catch(e){msg("resetMsg","❌ "+humanAuthError(e));}
-  finally{button.disabled=false;}
-};
-
 $("#forgotPasswordBtn").onclick=async()=>{
   if(!sb)return msg("loginMsg","❌ خدمة المصادقة غير متاحة حاليًا.");
   const email=$("#email").value.trim();
@@ -230,7 +214,7 @@ $("#forgotPasswordBtn").onclick=async()=>{
   finally{button.disabled=false;}
 };
 $("#logoutBtn").onclick=async()=>{
-  try{if(sb)await sb.auth.signOut({scope:"local"})}finally{localStorage.removeItem("larachedev_session");session=null;role=null;location.reload()}
+  try{if(sb)await sb.auth.signOut({scope:"local"})}finally{session=null;role=null;location.reload()}
 };
 $("#refreshFrame").onclick=()=>{const f=$("#siteFrame");f.src=f.src};
 $("#testGithubToken").onclick=testGithubHealth;
