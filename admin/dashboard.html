@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive">
 <title>لوحة التحكم — LaracheDev</title>
-<link rel="stylesheet" href="./admin.css?v=20261008-3">
+<link rel="stylesheet" href="./admin.css?v=20261009-1">
 </head>
 <body class="admin-body">
 <div class="app-shell">
@@ -26,6 +26,13 @@
       <button class="nav-item" data-section="design"><span class="nav-icon">✦</span><span>Design</span><b>›</b></button>
       <button class="nav-item" data-section="security"><span class="nav-icon">⌾</span><span>Security</span><b>›</b></button>
       <button class="nav-item" data-section="system"><span class="nav-icon">⚙</span><span>System</span><b>›</b></button>
+    </nav>
+    <div class="side-section-title">أدوات المطور</div>
+    <nav class="side-nav" aria-label="أدوات إدارة الموقع">
+      <button class="nav-item" data-section="repository-importer" type="button"><span class="nav-icon">⇩</span><span>GitHub Importer</span><b>›</b></button>
+      <button class="nav-item" data-section="file-manager" type="button"><span class="nav-icon">▣</span><span>File Manager</span><b>›</b></button>
+      <button class="nav-item" data-section="html-editor" type="button"><span class="nav-icon">&lt;/&gt;</span><span>HTML Editor</span><b>›</b></button>
+      <button class="nav-item" data-section="website-viewer" type="button"><span class="nav-icon">◉</span><span>Website Viewer</span><b>›</b></button>
     </nav>
     <div class="side-section-title">المصادر</div>
     <nav class="side-nav">
@@ -194,6 +201,44 @@
   </article>
 </section>
 
+        <section class="section-view" data-view="repository-importer">
+          <div class="section-heading"><div><h2>GitHub Repository Importer</h2><p>استيراد ملفات نصية من مستودع عام إلى مستودع الموقع بعد اختيار المسارات ومراجعتها.</p></div><button class="outline-button" id="importer-load" type="button">تحميل الملفات</button></div>
+          <article class="panel form-panel">
+            <div class="form-grid">
+              <label><span>المستودع المصدر (owner/repo)</span><input id="importer-repo" value="gpldroid/larachedev" placeholder="owner/repository"></label>
+              <label><span>الفرع</span><input id="importer-branch" value="main"></label>
+              <label><span>مسار داخل المستودع (اختياري)</span><input id="importer-path" placeholder="مثال: pages أو assets"></label>
+              <label><span>مسار الوجهة في الموقع الحالي</span><input id="importer-destination" placeholder="مثال: imported/"></label>
+            </div>
+            <div class="content-actions" style="margin-top:14px"><button class="primary-button" id="importer-run" type="button">استيراد المحدد</button><span id="importer-status" class="pill">جاهز</span></div>
+            <div id="importer-files" class="tool-file-list"><div class="empty-state">حمّل ملفات المستودع لعرض العناصر القابلة للاستيراد.</div></div>
+            <p class="design-help">يقتصر الاستيراد على الملفات النصية. لن تُنفّذ ملفات JavaScript أو HTML أثناء المعاينة، وستُكتب الملفات المختارة فقط إلى المستودع الهدف بعد التأكيد.</p>
+          </article>
+        </section>
+        <section class="section-view" data-view="file-manager">
+          <div class="section-heading"><div><h2>File Manager</h2><p>استعراض ملفات المستودع، تحرير الملفات النصية، واستيراد/تصدير نسخ احتياطية.</p></div><div class="content-actions"><button class="outline-button" id="files-refresh" type="button">تحديث الملفات</button><button class="outline-button" id="files-export" type="button">تصدير JSON</button><button class="primary-button" id="files-new" type="button">ملف جديد</button></div></div>
+          <article class="panel"><div class="form-grid"><label><span>مسار الملف</span><input id="file-path" placeholder="pages/example.html"></label><label><span>رسالة commit</span><input id="file-message" value="chore(admin): manage site files"></label></div>
+            <label class="tool-label"><span>محتوى الملف</span><textarea id="file-content" rows="15" spellcheck="false" placeholder="اختر ملفاً من القائمة أو اكتب محتوى ملف جديد…"></textarea></label>
+            <div class="content-actions" style="margin-top:12px"><button class="primary-button" id="file-save" type="button">حفظ في GitHub</button><button class="outline-button" id="files-import" type="button">استيراد JSON</button><input id="files-import-input" type="file" accept="application/json,.json" hidden><span id="file-status" class="pill">لم يتم اختيار ملف</span></div>
+            <div id="file-list" class="tool-file-list"><div class="empty-state">اضغط «تحديث الملفات» لعرض ملفات المستودع.</div></div>
+          </article>
+        </section>
+        <section class="section-view" data-view="html-editor">
+          <div class="section-heading"><div><h2>HTML Editor</h2><p>محرر HTML مع معاينة آمنة داخل إطار معزول قبل الحفظ.</p></div><div class="content-actions"><button class="outline-button" id="html-preview" type="button">معاينة</button><button class="primary-button" id="html-save" type="button">حفظ الملف</button></div></div>
+          <article class="panel">
+            <div class="form-grid"><label><span>مسار الملف في المستودع</span><input id="html-path" placeholder="pages/example.html"></label><label><span>رسالة commit</span><input id="html-message" value="feat(site): update HTML page"></label></div>
+            <label class="tool-label"><span>HTML</span><textarea id="html-source" rows="18" spellcheck="false" placeholder="الصق HTML هنا أو افتح ملفاً من File Manager…"></textarea></label>
+            <h3>Live Preview</h3><iframe id="html-preview-frame" title="معاينة HTML" sandbox="" referrerpolicy="no-referrer"></iframe>
+          </article>
+        </section>
+        <section class="section-view" data-view="website-viewer">
+          <div class="section-heading"><div><h2>Website Viewer</h2><p>عرض الموقع المنشور أو فتح مسار محدد داخل نافذة المعاينة.</p></div><button class="primary-button" id="viewer-open" type="button">فتح المعاينة</button></div>
+          <article class="panel"><div class="form-grid"><label><span>رابط الموقع</span><input id="viewer-url" type="url" value="https://gpldroid.github.io/larachedev/"></label><label><span>مسار الصفحة (اختياري)</span><input id="viewer-path" placeholder="about.html"></label></div>
+            <div class="viewer-frame-wrap"><iframe id="website-viewer-frame" title="Website Viewer" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+            <p class="design-help">بعض المواقع تمنع التضمين داخل iframe؛ في هذه الحالة استخدم زر «فتح في تبويب جديد».</p>
+            <button class="outline-button" id="viewer-new-tab" type="button">فتح في تبويب جديد ↗</button>
+          </article>
+        </section>
         <section class="section-view" data-view="security">
           <div class="section-heading"><div><h2>Security</h2><p>المصادقة والصلاحيات وحالة حماية البيانات.</p></div></div>
           <div class="security-grid">
@@ -532,6 +577,95 @@ async function discoverContent(){
   finally{button.disabled=false;button.textContent="اكتشاف محتوى الموقع"}
 }
 
+
+// Developer tools: all GitHub writes go through the authenticated Edge Function.
+const TEXT_EXTENSIONS=/\\.(html?|css|js|mjs|cjs|json|xml|txt|md|svg|yml|yaml|toml|webmanifest|csv|gitignore|map)$/i;
+let repositoryTree=[];
+async function loadRepositoryFiles(){
+  const box=$("#file-list"),button=$("#files-refresh");
+  if(button){button.disabled=true;button.textContent="جاري التحميل…";}
+  try{
+    const result=await callGitHubManager("tree");
+    repositoryTree=(result.tree||[]).filter(x=>x.type==="blob");
+    if(!repositoryTree.length)throw new Error("لم يرجع المستودع أي ملفات.");
+    box.innerHTML=repositoryTree.map(x=>"<button type='button' class='tool-file-row' data-open-file='"+esc(x.path)+"'><span>"+esc(x.path)+"</span><small>"+(x.size||0)+" B</small></button>").join("");
+    box.querySelectorAll("[data-open-file]").forEach(b=>b.addEventListener("click",()=>openRepoFile(b.dataset.openFile)));
+    $("#file-status").textContent=repositoryTree.length+" ملف";
+  }catch(e){showAlert("تعذر تحميل الملفات: "+e.message,"error");}
+  finally{if(button){button.disabled=false;button.textContent="تحديث الملفات";}}
+}
+async function openRepoFile(path){
+  if(!TEXT_EXTENSIONS.test(path)){showAlert("هذا النوع غير مدعوم في محرر النصوص.","warning");return;}
+  try{
+    const result=await callGitHubManager("file",{path});
+    $("#file-path").value=path;$("#file-content").value=result.content||"";
+    $("#html-path").value=path;if(/\\.html?$/i.test(path))$("#html-source").value=result.content||"";
+    $("#file-status").textContent="تم تحميل "+path;
+  }catch(e){showAlert("تعذر فتح الملف: "+e.message,"error");}
+}
+async function saveRepoFile(path,content,message){
+  if(!path||path.startsWith("/")||path.split("/").some(p=>p===".."||p==="."))throw new Error("مسار الملف غير صالح.");
+  if(!TEXT_EXTENSIONS.test(path))throw new Error("نوع الملف غير مدعوم لأسباب أمنية.");
+  if(!content.trim())throw new Error("محتوى الملف فارغ.");
+  return callGitHubManager("write-file",{method:"POST",body:{path,content,message:message||"chore(admin): update file",branch:"main"}});
+}
+async function loadImporterFiles(){
+  const repo=$("#importer-repo").value.trim(),branch=$("#importer-branch").value.trim()||"main",prefix=$("#importer-path").value.trim().replace(/^\\/+|\\/+$/g,"");
+  if(!/^[\\w.-]+\\/[\\w.-]+$/.test(repo))throw new Error("أدخل المستودع بصيغة owner/repository.");
+  const target=$("#importer-files");target.innerHTML="<div class='empty-state'>جاري قراءة المستودع…</div>";
+  const url="https://api.github.com/repos/"+repo+"/git/trees/"+encodeURIComponent(branch)+"?recursive=1";
+  const response=await fetch(url,{headers:{Accept:"application/vnd.github+json"}});
+  if(!response.ok)throw new Error("GitHub API "+response.status+" — تحقق من اسم المستودع والفرع.");
+  const data=await response.json();
+  const files=(data.tree||[]).filter(x=>x.type==="blob"&&TEXT_EXTENSIONS.test(x.path)&&(!prefix||x.path.startsWith(prefix+"/")||x.path===prefix)&&x.size<500000).slice(0,300);
+  target.innerHTML=files.length?files.map((x,i)=>"<label class='tool-file-row'><input type='checkbox' data-import-path='"+esc(x.path)+"'><span>"+esc(x.path)+"</span><small>"+x.size+" B</small></label>").join(""):"<div class='empty-state'>لم يتم العثور على ملفات نصية قابلة للاستيراد.</div>";
+  $("#importer-status").textContent=files.length+" ملف";
+}
+async function importSelectedFiles(){
+  const repo=$("#importer-repo").value.trim(),branch=$("#importer-branch").value.trim()||"main",dest=$("#importer-destination").value.trim().replace(/^\\/+|\\/+$/g,"");
+  const selected=[...$("#importer-files").querySelectorAll("input[data-import-path]:checked")];
+  if(!selected.length)throw new Error("حدد ملفاً واحداً على الأقل.");
+  if(!confirm("سيتم نسخ "+selected.length+" ملف إلى المستودع الحالي. هل تريد المتابعة؟"))return;
+  let done=0;
+  for(const cb of selected){
+    const path=cb.dataset.importPath;
+    if(!TEXT_EXTENSIONS.test(path))continue;
+    const rawUrl="https://raw.githubusercontent.com/"+repo+"/"+encodeURIComponent(branch)+"/"+path.split("/").map(encodeURIComponent).join("/");
+    const response=await fetch(rawUrl);if(!response.ok)throw new Error("تعذر تنزيل "+path);
+    const content=await response.text();
+    const target=(dest?dest+"/":"")+path;
+    await saveRepoFile(target,content,"feat(import): import "+path);done++;
+    $("#importer-status").textContent=done+" / "+selected.length;
+  }
+  showAlert("اكتمل استيراد "+done+" ملف إلى المستودع الحالي.","success");await loadRepositoryFiles();
+}
+function downloadJson(filename,data){
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
+}
+function previewHtml(){const frame=$("#html-preview-frame");frame.srcdoc=$("#html-source").value;frame.setAttribute("sandbox","");}
+function openWebsiteViewer(){
+  const base=$("#viewer-url").value.trim();if(!/^https?:\\/\\//i.test(base))throw new Error("أدخل رابطاً صحيحاً يبدأ بـ https:// أو http://");
+  const url=new URL(base);const path=$("#viewer-path").value.trim().replace(/^\\/+/, "");
+  if(path)url.pathname=url.pathname.replace(/\\/?$/,"/")+path;
+  $("#website-viewer-frame").src=url.href;
+}
+function safeBind(selector,event,handler){
+  const el=$(selector);if(el)el.addEventListener(event,async e=>{try{await handler(e)}catch(error){console.error(error);showAlert(error.message||"حدث خطأ غير متوقع","error")}});
+}
+safeBind("#files-refresh","click",loadRepositoryFiles);
+safeBind("#files-new","click",()=>{$("#file-path").value="";$("#file-content").value="";$("#file-status").textContent="ملف جديد";});
+safeBind("#file-save","click",async()=>{const r=await saveRepoFile($("#file-path").value.trim(),$("#file-content").value,$("#file-message").value.trim());$("#file-status").textContent="تم الحفظ";showAlert("تم حفظ الملف في GitHub: "+$("#file-path").value,"success");await loadRepositoryFiles();});
+safeBind("#files-export","click",async()=>{if(!repositoryTree.length)await loadRepositoryFiles();downloadJson("larachedev-files-export.json",{repository:"gpldroid/larachedev",branch:"main",exported_at:new Date().toISOString(),files:repositoryTree});});
+safeBind("#files-import","click",()=>$("#files-import-input").click());
+safeBind("#files-import-input","change",async e=>{const f=e.target.files?.[0];if(!f)return;const data=JSON.parse(await f.text());if(!Array.isArray(data.files))throw new Error("صيغة JSON غير صحيحة.");const chosen=data.files.filter(x=>x.path&&typeof x.content==="string"&&TEXT_EXTENSIONS.test(x.path));if(!chosen.length)throw new Error("لا توجد ملفات نصية داخل النسخة.");if(!confirm("سيتم استيراد "+chosen.length+" ملف. هل تريد المتابعة؟"))return;for(const item of chosen)await saveRepoFile(item.path,item.content,"chore(import): restore "+item.path);showAlert("اكتمل استيراد النسخة الاحتياطية.","success");await loadRepositoryFiles();});
+safeBind("#importer-load","click",loadImporterFiles);
+safeBind("#importer-run","click",importSelectedFiles);
+safeBind("#html-preview","click",previewHtml);
+safeBind("#html-save","click",async()=>{const path=$("#html-path").value.trim(),content=$("#html-source").value;await saveRepoFile(path,content,$("#html-message").value.trim());showAlert("تم حفظ ملف HTML في GitHub.","success");await loadRepositoryFiles();});
+safeBind("#viewer-open","click",openWebsiteViewer);
+safeBind("#viewer-new-tab","click",()=>{const base=$("#viewer-url").value.trim();if(!/^https?:\\/\\//i.test(base))throw new Error("رابط الموقع غير صالح.");const url=new URL(base);const path=$("#viewer-path").value.trim().replace(/^\\/+/, "");if(path)url.pathname=url.pathname.replace(/\\/?$/,"/")+path;window.open(url.href,"_blank","noopener,noreferrer");});
+
 function activate(name){
   $$(".nav-item[data-section]").forEach(x=>x.classList.toggle("active",x.dataset.section===name));
   $$(".section-view").forEach(x=>x.classList.toggle("active",x.dataset.view===name));
@@ -604,5 +738,21 @@ await guard();
     </form>
   </div>
 </div>
+<script>
+/* Independent navigation/theme fallback: remains usable if the Supabase module/CDN fails. */
+(function(){
+ const $=s=>document.querySelector(s), $=s=>Array.from(document.querySelectorAll(s));
+ function sidebar(open){const side=$("#sidebar"),shade=$("#sidebar-backdrop"),btn=$("#menu-button");if(!side)return;side.classList.toggle("open",open);shade?.classList.toggle("open",open);shade?.setAttribute("aria-hidden",open?"false":"true");btn?.setAttribute("aria-expanded",open?"true":"false");document.body.classList.toggle("sidebar-open",open);}
+ function activate(name){const view=$('[data-view="'+name+'"]');if(!view)return;$(".nav-item[data-section]").forEach(b=>b.classList.toggle("active",b.dataset.section===name));$(".section-view").forEach(s=>s.classList.toggle("active",s.dataset.view===name));const crumb=$("#breadcrumb");if(crumb)crumb.textContent=name.replace(/-/g," ").replace(/\\b\\w/g,c=>c.toUpperCase());sidebar(false);window.scrollTo({top:0,behavior:"smooth"});}
+ $("#menu-button")?.addEventListener("click",()=>sidebar(!$("#sidebar")?.classList.contains("open")));
+ $("#sidebar-backdrop")?.addEventListener("click",()=>sidebar(false));
+ document.addEventListener("keydown",e=>{if(e.key==="Escape")sidebar(false)});
+ $(".nav-item[data-section]").forEach(b=>b.addEventListener("click",()=>activate(b.dataset.section)));
+ $("[data-section-target]").forEach(b=>b.addEventListener("click",()=>activate(b.dataset.sectionTarget)));
+ function theme(){document.body.classList.toggle("dark");try{localStorage.setItem("larache_admin_theme",document.body.classList.contains("dark")?"dark":"light")}catch{}}
+ $("#theme-button")?.addEventListener("click",theme);
+ try{if(localStorage.getItem("larache_admin_theme")==="dark")document.body.classList.add("dark")}catch{}
+})();
+</script>
 </body>
 </html>
