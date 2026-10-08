@@ -579,7 +579,7 @@ async function discoverContent(){
 
 
 // Developer tools: all GitHub writes go through the authenticated Edge Function.
-const TEXT_EXTENSIONS=/\\.(html?|css|js|mjs|cjs|json|xml|txt|md|svg|yml|yaml|toml|webmanifest|csv|gitignore|map)$/i;
+const TEXT_EXTENSIONS=/\.(html?|css|js|mjs|cjs|json|xml|txt|md|svg|yml|yaml|toml|webmanifest|csv|gitignore|map)$/i;
 let repositoryTree=[];
 async function loadRepositoryFiles(){
   const box=$("#file-list"),button=$("#files-refresh");
@@ -599,7 +599,7 @@ async function openRepoFile(path){
   try{
     const result=await callGitHubManager("file",{path});
     $("#file-path").value=path;$("#file-content").value=result.content||"";
-    $("#html-path").value=path;if(/\\.html?$/i.test(path))$("#html-source").value=result.content||"";
+    $("#html-path").value=path;if(/\.html?$/i.test(path))$("#html-source").value=result.content||"";
     $("#file-status").textContent="تم تحميل "+path;
   }catch(e){showAlert("تعذر فتح الملف: "+e.message,"error");}
 }
@@ -610,8 +610,8 @@ async function saveRepoFile(path,content,message){
   return callGitHubManager("write-file",{method:"POST",body:{path,content,message:message||"chore(admin): update file",branch:"main"}});
 }
 async function loadImporterFiles(){
-  const repo=$("#importer-repo").value.trim(),branch=$("#importer-branch").value.trim()||"main",prefix=$("#importer-path").value.trim().replace(/^\\/+|\\/+$/g,"");
-  if(!/^[\\w.-]+\\/[\\w.-]+$/.test(repo))throw new Error("أدخل المستودع بصيغة owner/repository.");
+  const repo=$("#importer-repo").value.trim(),branch=$("#importer-branch").value.trim()||"main",prefix=$("#importer-path").value.trim().replace(/^\/+|\/+$/g,"");
+  if(!/^[\w.-]+\/[\w.-]+$/.test(repo))throw new Error("أدخل المستودع بصيغة owner/repository.");
   const target=$("#importer-files");target.innerHTML="<div class='empty-state'>جاري قراءة المستودع…</div>";
   const url="https://api.github.com/repos/"+repo+"/git/trees/"+encodeURIComponent(branch)+"?recursive=1";
   const response=await fetch(url,{headers:{Accept:"application/vnd.github+json"}});
@@ -622,7 +622,7 @@ async function loadImporterFiles(){
   $("#importer-status").textContent=files.length+" ملف";
 }
 async function importSelectedFiles(){
-  const repo=$("#importer-repo").value.trim(),branch=$("#importer-branch").value.trim()||"main",dest=$("#importer-destination").value.trim().replace(/^\\/+|\\/+$/g,"");
+  const repo=$("#importer-repo").value.trim(),branch=$("#importer-branch").value.trim()||"main",dest=$("#importer-destination").value.trim().replace(/^\/+|\/+$/g,"");
   const selected=[...$("#importer-files").querySelectorAll("input[data-import-path]:checked")];
   if(!selected.length)throw new Error("حدد ملفاً واحداً على الأقل.");
   if(!confirm("سيتم نسخ "+selected.length+" ملف إلى المستودع الحالي. هل تريد المتابعة؟"))return;
@@ -645,9 +645,9 @@ function downloadJson(filename,data){
 }
 function previewHtml(){const frame=$("#html-preview-frame");frame.srcdoc=$("#html-source").value;frame.setAttribute("sandbox","");}
 function openWebsiteViewer(){
-  const base=$("#viewer-url").value.trim();if(!/^https?:\\/\\//i.test(base))throw new Error("أدخل رابطاً صحيحاً يبدأ بـ https:// أو http://");
-  const url=new URL(base);const path=$("#viewer-path").value.trim().replace(/^\\/+/, "");
-  if(path)url.pathname=url.pathname.replace(/\\/?$/,"/")+path;
+  const base=$("#viewer-url").value.trim();if(!/^https?:\/\//i.test(base))throw new Error("أدخل رابطاً صحيحاً يبدأ بـ https:// أو http://");
+  const url=new URL(base);const path=$("#viewer-path").value.trim().replace(/^\/+/, "");
+  if(path)url.pathname=url.pathname.replace(/\/?$/,"/")+path;
   $("#website-viewer-frame").src=url.href;
 }
 function safeBind(selector,event,handler){
@@ -664,7 +664,7 @@ safeBind("#importer-run","click",importSelectedFiles);
 safeBind("#html-preview","click",previewHtml);
 safeBind("#html-save","click",async()=>{const path=$("#html-path").value.trim(),content=$("#html-source").value;await saveRepoFile(path,content,$("#html-message").value.trim());showAlert("تم حفظ ملف HTML في GitHub.","success");await loadRepositoryFiles();});
 safeBind("#viewer-open","click",openWebsiteViewer);
-safeBind("#viewer-new-tab","click",()=>{const base=$("#viewer-url").value.trim();if(!/^https?:\\/\\//i.test(base))throw new Error("رابط الموقع غير صالح.");const url=new URL(base);const path=$("#viewer-path").value.trim().replace(/^\\/+/, "");if(path)url.pathname=url.pathname.replace(/\\/?$/,"/")+path;window.open(url.href,"_blank","noopener,noreferrer");});
+safeBind("#viewer-new-tab","click",()=>{const base=$("#viewer-url").value.trim();if(!/^https?:\/\//i.test(base))throw new Error("رابط الموقع غير صالح.");const url=new URL(base);const path=$("#viewer-path").value.trim().replace(/^\/+/, "");if(path)url.pathname=url.pathname.replace(/\/?$/,"/")+path;window.open(url.href,"_blank","noopener,noreferrer");});
 
 function activate(name){
   $$(".nav-item[data-section]").forEach(x=>x.classList.toggle("active",x.dataset.section===name));
@@ -743,7 +743,7 @@ await guard();
 (function(){
  const $=s=>document.querySelector(s), $=s=>Array.from(document.querySelectorAll(s));
  function sidebar(open){const side=$("#sidebar"),shade=$("#sidebar-backdrop"),btn=$("#menu-button");if(!side)return;side.classList.toggle("open",open);shade?.classList.toggle("open",open);shade?.setAttribute("aria-hidden",open?"false":"true");btn?.setAttribute("aria-expanded",open?"true":"false");document.body.classList.toggle("sidebar-open",open);}
- function activate(name){const view=$('[data-view="'+name+'"]');if(!view)return;$(".nav-item[data-section]").forEach(b=>b.classList.toggle("active",b.dataset.section===name));$(".section-view").forEach(s=>s.classList.toggle("active",s.dataset.view===name));const crumb=$("#breadcrumb");if(crumb)crumb.textContent=name.replace(/-/g," ").replace(/\\b\\w/g,c=>c.toUpperCase());sidebar(false);window.scrollTo({top:0,behavior:"smooth"});}
+ function activate(name){const view=$('[data-view="'+name+'"]');if(!view)return;$(".nav-item[data-section]").forEach(b=>b.classList.toggle("active",b.dataset.section===name));$(".section-view").forEach(s=>s.classList.toggle("active",s.dataset.view===name));const crumb=$("#breadcrumb");if(crumb)crumb.textContent=name.replace(/-/g," ").replace(/\b\w/g,c=>c.toUpperCase());sidebar(false);window.scrollTo({top:0,behavior:"smooth"});}
  $("#menu-button")?.addEventListener("click",()=>sidebar(!$("#sidebar")?.classList.contains("open")));
  $("#sidebar-backdrop")?.addEventListener("click",()=>sidebar(false));
  document.addEventListener("keydown",e=>{if(e.key==="Escape")sidebar(false)});
