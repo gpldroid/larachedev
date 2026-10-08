@@ -673,8 +673,8 @@ function activate(name){
   setSidebar(false);
   window.scrollTo({top:0,behavior:"smooth"});
 }
-$$(".nav-item[data-section]").forEach(b=>b.addEventListener("click",()=>activate(b.dataset.section)));
-$$("[data-section-target]").forEach(b=>b.addEventListener("click",()=>activate(b.dataset.sectionTarget)));
+
+
 $("[data-close-content]").forEach(x=>x.addEventListener("click",closeContentEditor));
 $("#close-content").addEventListener("click",closeContentEditor);
 $("#new-content").addEventListener("click",()=>openContentEditor());
@@ -706,13 +706,11 @@ function setSidebar(open){
   document.body.classList.toggle("sidebar-open",open);
 }
 $("#menu-button").setAttribute("aria-expanded","false");
-$("#menu-button").addEventListener("click",()=>setSidebar(!$("#sidebar").classList.contains("open")));
-$("#sidebar-backdrop").addEventListener("click",()=>setSidebar(false));
-document.addEventListener("keydown",e=>{if(e.key==="Escape")setSidebar(false)});
+
 function toggleTheme(){document.body.classList.toggle("dark");localStorage.setItem("larache_admin_theme",document.body.classList.contains("dark")?"dark":"light")}
-$("#theme-button").addEventListener("click",toggleTheme);$("#theme-toggle-card")?.addEventListener("click",toggleTheme);
+$("#theme-toggle-card")?.addEventListener("click",toggleTheme);
 $("#link-github").addEventListener("click",linkGitHub);
-if(localStorage.getItem("larache_admin_theme")==="dark")document.body.classList.add("dark");
+
 await guard();
 </script>
 <div id="content-modal" class="content-modal" hidden>
