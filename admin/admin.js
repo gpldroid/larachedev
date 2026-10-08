@@ -3,7 +3,7 @@ const sb=window.supabase?.createClient(C.supabaseUrl,C.supabasePublishableKey,{
   auth:{
     persistSession:true,
     autoRefreshToken:true,
-    detectSessionInUrl:false,
+    detectSessionInUrl:true,
     flowType:"pkce"
   }
 });
@@ -82,23 +82,56 @@ async function start(nextSession=null){
   starting=true;
   if(!sb){starting=false;return showLogin("تعذر تحميل Supabase JS. تحقق من اتصال الشبكة.");}
   try{
-    if(nextSession!==null) session=nextSession;
-    else {
+    if(nextSession!==null){
+      session=nextSession;
+    }else{
       const {data,error}=await sb.auth.getSession();
       if(error)throw error;
       session=data.session;
     }
-    if(!session)return showLogin();
-    const a=await api("admin_users?select=role,enabled&user_id=eq."+encodeURIComponent(session.user.id));
-    if(!a[0]?.enabled)throw Error("المستخدم غير مفعّل في admin_users.");
-    role=a[0].role;
-    $("#loginView").hidden=true;$("#dashboardView").hidden=false;$("#logoutBtn").hidden=false;
-    $("#supabaseStatus").textContent="READY";initTabs();applyRoleUI();
+
+    if(!session){
+      role=null;
+      return showLogin();
+    }
+
+    const {data:{user},error:userError}=await sb.auth.getUser();
+    if(userError)throw userError;
+    if(!user){
+      session=null;
+      role=null;
+      return showLogin("انتهت جلسة الدخول. سجّل الدخول مرة أخرى.");
+    }
+
+    const {data:admin,error:adminError}=await sb
+      .from("admin_users")
+      .select("role,enabled")
+      .eq("user_id",user.id)
+      .maybeSingle();
+
+    if(adminError)throw adminError;
+    if(!admin)throw Error("هذا الحساب تمت مصادقته بنجاح، لكنه غير مسجل كمستخدم في لوحة الإدارة.");
+    if(!admin.enabled)throw Error("حساب لوحة الإدارة معطّل.");
+
+    role=String(admin.role||"viewer");
+    session={...session,user};
+
+    $("#loginView").hidden=true;
+    $("#dashboardView").hidden=false;
+    $("#logoutBtn").hidden=false;
+    $("#supabaseStatus").textContent="READY";
+    initTabs();
+    applyRoleUI();
     await refreshOverview();
   }catch(e){
+    const message=e?.message||"فشل التحقق من الجلسة.";
     try{await sb.auth.signOut({scope:"local"})}catch{}
-    session=null;role=null;showLogin(e.message||"فشل التحقق من الجلسة.");
-  }finally{starting=false}
+    session=null;
+    role=null;
+    showLogin(message);
+  }finally{
+    starting=false;
+  }
 }
 
 function showLogin(error=""){ $("#loginView").hidden=false;$("#dashboardView").hidden=true;$("#logoutBtn").hidden=true;if(error)msg("loginMsg","❌ "+error)}
@@ -122,42 +155,14 @@ async function githubLogin(){
   }
 }
 
-async function consumeOAuthCallback(){
-  if(!sb)throw Error("Supabase JS غير متاح.");
+function readAuthCallbackError(){
   const url=new URL(window.location.href);
   const error=url.searchParams.get("error_description")||url.searchParams.get("error");
-  if(error){
-    history.replaceState(null,"",url.pathname);
-    throw Error(error);
-  }
-
-  const code=url.searchParams.get("code");
-  if(code){
-    const {data,error:exchangeError}=await sb.auth.exchangeCodeForSession(code);
-    history.replaceState(null,"",url.pathname);
-    if(exchangeError)throw Error(exchangeError.message);
-    if(!data.session)throw Error("تعذر إنشاء جلسة GitHub.");
-    return data.session;
-  }
-
-  const hash=url.hash.startsWith("#")?url.hash.slice(1):url.hash;
-  if(!hash)return null;
-  const h=new URLSearchParams(hash);
-  const hashError=h.get("error_description")||h.get("error");
-  if(hashError){
-    history.replaceState(null,"",url.pathname);
-    throw Error(hashError);
-  }
-  const accessToken=h.get("access_token");
-  const refreshToken=h.get("refresh_token");
-  if(!accessToken||!refreshToken)return null;
-
-  const {data,error:setError}=await sb.auth.setSession({access_token:accessToken,refresh_token:refreshToken});
+  if(!error)return null;
   history.replaceState(null,"",url.pathname);
-  if(setError)throw Error(setError.message);
-  if(!data.session)throw Error("تعذر إنشاء جلسة GitHub.");
-  return data.session;
+  return error;
 }
+
 
 $("#loginForm").onsubmit=async e=>{
   e.preventDefault();
@@ -165,7 +170,12 @@ $("#loginForm").onsubmit=async e=>{
   msg("loginMsg","جارٍ تسجيل الدخول…");
   try{
     const {data,error}=await sb.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});
-    if(error)throw error;
+    if(error){
+      if(error.message?.toLowerCase().includes("invalid login credentials")){
+        throw Error("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+      }
+      throw error;
+    }
     if(!data.session)throw Error("تمت المصادقة لكن لم يتم إنشاء جلسة.");
     await start(data.session);
   }catch(e){msg("loginMsg",e.message||"فشل تسجيل الدخول.")}
@@ -356,26 +366,28 @@ $("#dispatchWorkflow").onclick=async()=>{
 
 if(sb){
   sb.auth.onAuthStateChange((event,nextSession)=>{
+    if(event==="SIGNED_OUT"){
+      session=null;
+      role=null;
+      showLogin();
+      return;
+    }
+
+    if((event==="INITIAL_SESSION" || event==="SIGNED_IN") && nextSession){
+      setTimeout(()=>start(nextSession),0);
+      return;
+    }
+
     if(event==="TOKEN_REFRESHED" && nextSession){
       session=nextSession;
-    }
-    if(event==="SIGNED_OUT"){
-      session=null;role=null;showLogin();
     }
   });
 }
 
 (async()=>{
-  try{
-    const oauthSession=await consumeOAuthCallback();
-    if(oauthSession){
-      msg("loginMsg","تم تسجيل الدخول عبر GitHub، جارٍ التحقق من الصلاحيات…");
-      await start(oauthSession);
-      return;
-    }
-  }catch(e){
-    session=null;role=null;
-    msg("loginMsg","❌ "+(e.message||"فشل إكمال تسجيل الدخول عبر GitHub."));
+  const callbackError=readAuthCallbackError();
+  if(callbackError){
+    showLogin(callbackError);
     return;
   }
   await start();
