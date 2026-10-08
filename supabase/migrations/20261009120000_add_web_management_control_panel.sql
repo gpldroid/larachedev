@@ -1,0 +1,4 @@
+-- This migration is also applied to Supabase project tdvohzsmxlwupiuompdd.
+-- See the deployed migration version 20261009120000_add_web_management_control_panel.
+-- The migration creates managed_sites, site_deployments, site_domains,
+-- developer_tool_runs, repository_connections, indexes and role-based RLS policies.
