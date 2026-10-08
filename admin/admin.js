@@ -141,8 +141,6 @@ function humanAuthError(error){
   if(text.includes("email not confirmed"))return "يجب تأكيد البريد الإلكتروني قبل تسجيل الدخول.";
   if(text.includes("too many requests")||text.includes("rate limit"))return "تم تجاوز عدد محاولات الدخول المسموح بها. انتظر قليلًا ثم حاول مرة أخرى.";
   if(text.includes("network")||text.includes("failed to fetch"))return "تعذر الاتصال بخدمة المصادقة. تحقق من اتصال الإنترنت وحاول مرة أخرى.";
-  if(text.includes("pkce")||text.includes("code verifier"))return "تعذر إكمال تسجيل الدخول عبر GitHub. أعد فتح صفحة الدخول وحاول مرة أخرى.";
-  if(text.includes("redirect"))return "إعداد إعادة التوجيه لتسجيل الدخول غير صحيح. راجع إعدادات OAuth.";
   if(text.includes("not registered")||text.includes("غير مسجل"))return "تم تسجيل الدخول بنجاح، لكن هذا الحساب غير مصرح له بدخول لوحة الإدارة.";
   return raw;
 }
@@ -150,34 +148,6 @@ function showLogin(error=""){
   $("#loginView").hidden=false;$("#dashboardView").hidden=true;$("#logoutBtn").hidden=true;
   if(error)msg("loginMsg","❌ "+humanAuthError(error));
 }
-
-async function githubLogin(){
-  if(!sb)return msg("loginMsg","❌ تعذر تحميل Supabase Auth. تحقق من اتصال الشبكة ثم أعد تحميل الصفحة.");
-  const btn=$("#githubLoginBtn");
-  if(btn)btn.disabled=true;
-  msg("loginMsg","جارٍ فتح GitHub لتسجيل الدخول…");
-  try{
-    const redirectTo="https://gpldroid.github.io/larachedev/admin/";
-    const {data,error}=await sb.auth.signInWithOAuth({
-      provider:"github",
-      options:{redirectTo,skipBrowserRedirect:false}
-    });
-    if(error)throw error;
-    if(!data?.url)throw Error("لم يُرجع Supabase رابط تسجيل GitHub.");
-  }catch(e){
-    if(btn)btn.disabled=false;
-    msg("loginMsg","❌ تعذر فتح GitHub: "+(e.message||"خطأ غير معروف"));
-  }
-}
-
-function readAuthCallbackError(){
-  const url=new URL(window.location.href);
-  const error=url.searchParams.get("error_description")||url.searchParams.get("error");
-  if(!error)return null;
-  history.replaceState(null,"",url.pathname);
-  return error;
-}
-
 
 $("#loginForm").onsubmit=async e=>{
   e.preventDefault();
@@ -194,8 +164,6 @@ $("#loginForm").onsubmit=async e=>{
   }catch(e){msg("loginMsg","❌ "+humanAuthError(e));}
   finally{submit.disabled=false;}
 };
-
-$("#githubLoginBtn").onclick=githubLogin;
 
 $("#togglePassword").onclick=()=>{
   const input=$("#password"),button=$("#togglePassword"),visible=input.type==="text";
@@ -418,11 +386,4 @@ if(sb){
   });
 }
 
-(async()=>{
-  const callbackError=readAuthCallbackError();
-  if(callbackError){
-    showLogin(callbackError);
-    return;
-  }
-  await start();
-})();
+(async()=>{ await start(); })();
