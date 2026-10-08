@@ -314,43 +314,6 @@ Cloudflare
 Git
 GitHub
 ```
-
----
-
-# 📁 بنية المشروع
-
-المشروع مصمم ليكون خفيفًا وسهل التطوير والصيانة.
-
-مثال على البنية:
-
-```text
-larachedev/
-│
-├── index.html
-├── platforms.html
-├── instructions.html
-├── privacy.html
-├── terms.html
-├── sitemap.html
-├── 404.html
-│
-├── robots.txt
-├── sitemap.xml
-├── manifest.webmanifest
-├── favicon.svg
-│
-└── assets/
-    ├── css/
-    │   └── style.css
-    │
-    ├── js/
-    │   └── app.js
-    │
-    └── images/
-```
-
----
-
 # 🔗 الموقع الرسمي
 
 يمكن زيارة المنصة من خلال:
@@ -363,7 +326,7 @@ larachedev/
 
 للاستفسار حول خدمات تطوير المواقع أو إنشاء مشروع جديد أو تطوير موقع موجود، يرجى استخدام وسائل التواصل الموجودة في الموقع الرسمي.
 
-🌐 **Website:** https://gpldroid.github.io/larachedev
+🌐 **email:** info@larache.xyz
 
 ---
 
