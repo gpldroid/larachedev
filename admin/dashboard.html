@@ -199,6 +199,7 @@
             <article class="security-card good"><span class="big-icon">✓</span><div><h3>Authentication</h3><p id="security-auth">Supabase Auth session active.</p></div></article>
             <article class="security-card good"><span class="big-icon">✓</span><div><h3>Admin Authorization</h3><p id="security-role">تم التحقق من is_admin().</p></div></article>
             <article class="security-card good"><span class="big-icon">✓</span><div><h3>Row Level Security</h3><p>الجداول الإدارية محمية بسياسات RLS.</p></div></article>
+            <article class="security-card good"><span class="big-icon">↔</span><div><h3>GitHub Identity</h3><p id="github-identity-status">جاري فحص حساب GitHub المرتبط…</p><button id="link-github" class="outline-button" type="button">ربط حساب GitHub</button></div></article>
             <article class="security-card warn"><span class="big-icon">!</span><div><h3>Password Protection</h3><p>يوجد تنبيه من Supabase بشأن Leaked Password Protection؛ يُنصح بتفعيله من إعدادات Auth.</p></div></article>
           </div>
         </section>
@@ -230,7 +231,7 @@
 import{createClient}from"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 const SUPABASE_URL="https://tdvohzsmxlwupiuompdd.supabase.co";
 const SUPABASE_KEY=atob("c2JfcHVibGlzaGFibGVfdGJIQThXQW5PSWF1Y2RCbVlIWVNTZ18tb0NBbzVzYQ==");
-const supabase=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:"pkce",persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+const supabase=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:"pkce",persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const state={user:null,admin:null,settings:new Map(),audit:[]};
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
@@ -286,6 +287,49 @@ function render(){
   $("#audit-count").textContent=state.audit.length+" events";
   $("#audit-list").innerHTML=state.audit.length?state.audit.map(x=>"<div class='audit-row'><div><strong>"+esc(x.action||"update")+"</strong><span>"+esc(x.resource||"system")+"</span></div><time>"+new Date(x.created_at).toLocaleString("ar-MA")+"</time></div>").join(""):"<div class='empty-state'>لا توجد عمليات مسجلة بعد.</div>";
 }
+async function loadGitHubIdentity(){
+  const status=$("#github-identity-status"),button=$("#link-github");
+  try{
+    const{data,error}=await supabase.auth.getUserIdentities();
+    if(error)throw error;
+    const identities=data?.identities||[];
+    const github=identities.find(x=>x.provider==="github");
+    if(github){
+      status.textContent="حساب GitHub مرتبط بهذا الحساب الإداري بالفعل.";
+      button.textContent="GitHub مرتبط";
+      button.disabled=true;
+      button.className="outline-button";
+    }else{
+      status.textContent="لا يوجد حساب GitHub مرتبط حاليًا.";
+      button.disabled=false;
+    }
+  }catch(error){
+    console.error("GitHub identity:",error);
+    status.textContent="تعذر فحص هوية GitHub.";
+  }
+}
+async function linkGitHub(){
+  const button=$("#link-github");
+  button.disabled=true;
+  button.textContent="جاري الربط…";
+  try{
+    const{data,error}=await supabase.auth.linkIdentity({
+      provider:"github",
+      options:{
+        redirectTo:"https://gpldroid.github.io/larachedev/admin/dashboard.html",
+        scopes:"read:user user:email"
+      }
+    });
+    if(error)throw error;
+    if(!data?.url)throw new Error("لم يُرجع Supabase رابط GitHub.");
+    window.location.assign(data.url);
+  }catch(error){
+    console.error("GitHub link:",error);
+    showAlert("تعذر ربط GitHub: "+(error.message||"خطأ غير معروف"),"error");
+    button.disabled=false;
+    button.textContent="ربط حساب GitHub";
+  }
+}
 async function guard(){
   const{data:{user},error}=await supabase.auth.getUser();
   if(error||!user){location.replace("./");return false}
@@ -296,6 +340,7 @@ async function guard(){
   $("#loading").hidden=true;$("#dashboard-app").hidden=false;
   await loadData();
   await loadContent();
+  await loadGitHubIdentity();
   return true;
 }
 async function saveSettings(){
@@ -478,6 +523,7 @@ $("#logout").addEventListener("click",async()=>{await supabase.auth.signOut();lo
 $("#menu-button").addEventListener("click",()=>$("#sidebar").classList.toggle("open"));
 function toggleTheme(){document.body.classList.toggle("dark");localStorage.setItem("larache_admin_theme",document.body.classList.contains("dark")?"dark":"light")}
 $("#theme-button").addEventListener("click",toggleTheme);$("#theme-toggle-card").addEventListener("click",toggleTheme);
+$("#link-github").addEventListener("click",linkGitHub);
 if(localStorage.getItem("larache_admin_theme")==="dark")document.body.classList.add("dark");
 await guard();
 </script>
