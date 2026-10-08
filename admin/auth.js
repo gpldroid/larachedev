@@ -1,1 +1,133 @@
-import{createClient}from"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";const URL="https://tdvohzsmxlwupiuompdd.supabase.co",KEY=atob("c2JfcHVibGlzaGFibGVfdGJIQThXQW5PSWF1Y2RCbVlIWVNTZ18tb0NBbzVzYQ=="),REDIRECT="https://gpldroid.github.io/larachedev/admin/";const s=createClient(URL,KEY,{auth:{flowType:"pkce",persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}}),form=document.querySelector("#login-form"),eb=document.querySelector("#email-button"),gb=document.querySelector("#github-button"),box=document.querySelector("#status");const show=(m,t="info")=>{box.textContent=m;box.className="status "+t;box.hidden=!m},busy=v=>{eb.disabled=v;gb.disabled=v};async function guard(){const{data:{user},error}=await s.auth.getUser();if(error||!user)return false;const{data:ok,error:e}=await s.rpc("is_admin");if(e||!ok){await s.auth.signOut();show(e?"تعذر التحقق من صلاحية الإدارة.":"هذا الحساب لا يملك صلاحية الإدارة.","error");return false}location.replace("./dashboard.html");return true}async function callback(){const p=new URLSearchParams(location.search),code=p.get("code"),err=p.get("error_description")||p.get("error");if(err){history.replaceState({},document.title,location.pathname);show(decodeURIComponent(err),"error");return}if(!code)return;busy(true);show("جاري تأكيد تسجيل الدخول عبر GitHub…");const{error}=await s.auth.exchangeCodeForSession(code);history.replaceState({},document.title,location.pathname);if(error){show("فشل تأكيد جلسة GitHub. أعد المحاولة.","error");busy(false);return}await guard()}form.addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(form);busy(true);show("جاري تسجيل الدخول…");const{error}=await s.auth.signInWithPassword({email:f.get("email"),password:f.get("password")});if(error){show("بيانات الدخول غير صحيحة أو لم يتم تأكيد البريد الإلكتروني.","error");busy(false);return}await guard();busy(false)});gb.addEventListener("click",async()=>{busy(true);show("جاري تحويلك إلى GitHub…");const{data,error}=await s.auth.signInWithOAuth({provider:"github",options:{redirectTo:REDIRECT,skipBrowserRedirect:true}});if(error||!data?.url){show("تعذر بدء GitHub. تأكد من تفعيل GitHub Provider في Supabase.","error");busy(false);return}location.assign(data.url)});await callback();if(!new URLSearchParams(location.search).get("code")){const{data:{session}}=await s.auth.getSession();if(session)await guard()}
+import{createClient}from"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+const SUPABASE_URL="https://tdvohzsmxlwupiuompdd.supabase.co";
+const SUPABASE_KEY=atob("c2JfcHVibGlzaGFibGVfdGJIQThXQW5PSWF1Y2RCbVlIWVNTZ18tb0NBbzVzYQ==");
+const REDIRECT_URL="https://gpldroid.github.io/larachedev/admin/";
+
+const supabase=createClient(SUPABASE_URL,SUPABASE_KEY,{
+  auth:{
+    flowType:"pkce",
+    persistSession:true,
+    autoRefreshToken:true,
+    detectSessionInUrl:true
+  }
+});
+
+const form=document.querySelector("#login-form");
+const emailButton=document.querySelector("#email-button");
+const githubButton=document.querySelector("#github-button");
+const statusBox=document.querySelector("#status");
+
+function show(message,type="info"){
+  if(!statusBox)return;
+  statusBox.textContent=message||"";
+  statusBox.className="status "+type;
+  statusBox.hidden=!message;
+}
+function setBusy(value){
+  if(emailButton)emailButton.disabled=value;
+  if(githubButton)githubButton.disabled=value;
+}
+function cleanAuthUrl(){
+  const clean=window.location.pathname+window.location.search;
+  window.history.replaceState({},document.title,clean);
+}
+async function verifyAdmin(session){
+  if(!session?.user)return false;
+  show("جاري التحقق من صلاحيات الإدارة…");
+  const{data,isAdminError}=await (async()=>{
+    const r=await supabase.rpc("is_admin");
+    return{data:r.data,isAdminError:r.error};
+  })();
+  if(isAdminError){
+    console.error("is_admin RPC:",isAdminError);
+    await supabase.auth.signOut();
+    show("تعذر التحقق من صلاحية الإدارة. تحقق من دالة is_admin في Supabase.","error");
+    return false;
+  }
+  if(data!==true){
+    await supabase.auth.signOut();
+    show("تم تسجيل الدخول، لكن هذا الحساب لا يملك صلاحية الإدارة.","error");
+    return false;
+  }
+  cleanAuthUrl();
+  window.location.replace("./dashboard.html");
+  return true;
+}
+
+async function handleInitialSession(){
+  const hash=window.location.hash;
+  if(hash.includes("error=")||hash.includes("error_description=")){
+    const p=new URLSearchParams(hash.replace(/^#/,""));
+    cleanAuthUrl();
+    show(p.get("error_description")||p.get("error")||"فشل تسجيل الدخول عبر GitHub.","error");
+    return;
+  }
+  const{data,error}=await supabase.auth.getSession();
+  if(error){
+    console.error("getSession:",error);
+    show("تعذر استعادة جلسة تسجيل الدخول. أعد تحميل الصفحة.","error");
+    return;
+  }
+  if(data.session)await verifyAdmin(data.session);
+}
+
+supabase.auth.onAuthStateChange(async(event,session)=>{
+  console.log("[auth]",event);
+  if(event==="SIGNED_IN"&&session){
+    setBusy(true);
+    await verifyAdmin(session);
+    setBusy(false);
+  }
+});
+
+form?.addEventListener("submit",async event=>{
+  event.preventDefault();
+  const email=new FormData(form).get("email")?.toString().trim();
+  const password=new FormData(form).get("password")?.toString()||"";
+  if(!email||!password){show("أدخل البريد الإلكتروني وكلمة المرور.","error");return;}
+  setBusy(true);
+  show("جاري تسجيل الدخول بالبريد الإلكتروني…");
+  const{data,error}=await supabase.auth.signInWithPassword({email,password});
+  if(error){
+    console.error("email login:",error);
+    show(error.message==="Email not confirmed"?"يجب تأكيد البريد الإلكتروني أولًا.":"بيانات الدخول غير صحيحة أو تعذر تسجيل الدخول.","error");
+    setBusy(false);
+    return;
+  }
+  await verifyAdmin(data.session);
+  setBusy(false);
+});
+
+githubButton?.addEventListener("click",async event=>{
+  event.preventDefault();
+  setBusy(true);
+  show("جاري الاتصال بـ GitHub…");
+  try{
+    const{data,error}=await supabase.auth.signInWithOAuth({
+      provider:"github",
+      options:{
+        redirectTo:REDIRECT_URL,
+        scopes:"read:user user:email"
+      }
+    });
+    if(error){
+      console.error("GitHub OAuth:",error);
+      show("تعذر بدء تسجيل الدخول عبر GitHub: "+error.message,"error");
+      setBusy(false);
+      return;
+    }
+    if(!data?.url){
+      show("لم يُرجع Supabase رابط GitHub. تحقق من تفعيل GitHub Provider.","error");
+      setBusy(false);
+      return;
+    }
+    window.location.assign(data.url);
+  }catch(error){
+    console.error("GitHub OAuth exception:",error);
+    show("حدث خطأ أثناء الاتصال بـ GitHub.","error");
+    setBusy(false);
+  }
+});
+
+handleInitialSession();
