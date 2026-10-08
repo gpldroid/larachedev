@@ -146,7 +146,16 @@ function humanAuthError(error){
 }
 function showLogin(error=""){
   $("#loginView").hidden=false;$("#dashboardView").hidden=true;$("#logoutBtn").hidden=true;
+  const reset=$("#resetView");if(reset)reset.hidden=true;
+  const form=$("#loginForm");if(form)form.hidden=false;
+  const forgot=$("#forgotPasswordBtn");if(forgot)forgot.hidden=false;
   if(error)msg("loginMsg","❌ "+humanAuthError(error));
+}
+function showRecovery(){
+  $("#loginView").hidden=false;$("#dashboardView").hidden=true;$("#logoutBtn").hidden=true;
+  const form=$("#loginForm"),reset=$("#resetView"),forgot=$("#forgotPasswordBtn");
+  if(form)form.hidden=true;if(forgot)forgot.hidden=true;if(reset)reset.hidden=false;
+  msg("loginMsg","");
 }
 
 $("#loginForm").onsubmit=async e=>{
@@ -165,11 +174,31 @@ $("#loginForm").onsubmit=async e=>{
   finally{submit.disabled=false;}
 };
 
-$("#togglePassword").onclick=()=>{
-  const input=$("#password"),button=$("#togglePassword"),visible=input.type==="text";
-  input.type=visible?"password":"text";button.textContent=visible?"إظهار":"إخفاء";
+$("#togglePassword").addEventListener("click",e=>{
+  e.preventDefault();
+  const input=$("#password"),button=$("#togglePassword");
+  if(!input||!button)return;
+  const visible=input.type==="text";
+  input.type=visible?"password":"text";
+  button.textContent=visible?"إظهار":"إخفاء";
   button.setAttribute("aria-label",visible?"إظهار كلمة المرور":"إخفاء كلمة المرور");
   button.setAttribute("aria-pressed",String(!visible));
+});
+
+$("#resetForm").onsubmit=async e=>{
+  e.preventDefault();
+  if(!sb)return;
+  const password=$("#newPassword").value,confirmPassword=$("#confirmPassword").value;
+  if(password.length<8)return msg("resetMsg","كلمة المرور يجب أن تكون 8 أحرف على الأقل.");
+  if(password!==confirmPassword)return msg("resetMsg","كلمتا المرور غير متطابقتين.");
+  const button=$("#resetSubmit");button.disabled=true;msg("resetMsg","جارٍ تحديث كلمة المرور…");
+  try{
+    const {error}=await sb.auth.updateUser({password});
+    if(error)throw error;
+    msg("resetMsg","تم تغيير كلمة المرور. جارٍ فتح لوحة التحكم…");
+    setTimeout(()=>start(),500);
+  }catch(e){msg("resetMsg","❌ "+humanAuthError(e));}
+  finally{button.disabled=false;}
 };
 
 $("#resetForm").onsubmit=async e=>{
@@ -388,6 +417,11 @@ if(sb){
       session=null;
       role=null;
       showLogin();
+      return;
+    }
+    if(event==="PASSWORD_RECOVERY"){
+      session=nextSession;
+      showRecovery();
       return;
     }
 
