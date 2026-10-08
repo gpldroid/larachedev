@@ -334,7 +334,7 @@ async function guard(){
   const{data:{user},error}=await supabase.auth.getUser();
   if(error||!user){location.replace("./");return false}
   const{data:ok,error:rpcError}=await supabase.rpc("is_admin");
-  if(rpcError||!ok){await supabase.auth.signOut();location.replace("./");return false}
+  if(rpcError||!ok){await supabase.auth.signOut({scope:"local"}).catch(()=>{});location.replace("./");return false}
   state.user=user;
   $("#security-auth").textContent="الجلسة نشطة للحساب: "+(user.email||"GitHub user");
   $("#loading").hidden=true;$("#dashboard-app").hidden=false;
@@ -519,7 +519,17 @@ $("#save-design").addEventListener("click",async()=>{try{await saveDesign()}catc
 $("#refresh").addEventListener("click",async()=>{try{await loadData();showAlert("تم تحديث البيانات.","success")}catch(e){showAlert("تعذر تحديث البيانات.","error")}});
 $("#overview-refresh").addEventListener("click",()=>$("#refresh").click());
 $("#system-refresh").addEventListener("click",()=>$("#refresh").click());
-$("#logout").addEventListener("click",async()=>{await supabase.auth.signOut();location.replace("./")});
+$("#logout").addEventListener("click",async()=>{
+  const button=$("#logout");
+  if(button){button.disabled=true;button.setAttribute("aria-busy","true");}
+  try{
+    await supabase.auth.signOut({scope:"local"});
+  }catch(error){
+    console.warn("Local sign-out:",error);
+  }finally{
+    window.location.replace("./?logged_out=1");
+  }
+});
 $("#menu-button").addEventListener("click",()=>$("#sidebar").classList.toggle("open"));
 function toggleTheme(){document.body.classList.toggle("dark");localStorage.setItem("larache_admin_theme",document.body.classList.contains("dark")?"dark":"light")}
 $("#theme-button").addEventListener("click",toggleTheme);$("#theme-toggle-card").addEventListener("click",toggleTheme);
