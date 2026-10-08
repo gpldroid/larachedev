@@ -7,10 +7,9 @@ const designRes = await fetch(DESIGN_API,{headers:{apikey:SUPABASE_KEY,Authoriza
 if(!designRes.ok) throw new Error(`Supabase design query failed: ${designRes.status} ${await designRes.text()}`);
 const designRows=await designRes.json();
 if(!designRows.length||!designRows[0].value) throw new Error("site_design setting is missing");
-const fs=await import("node:fs/promises");
-const path=await import("node:path");
-await fs.mkdir("assets",{recursive:true});
-await fs.writeFile("assets/site-config.json",JSON.stringify(designRows[0].value,null,2)+"\\n");
+const fs0=await import("node:fs/promises");
+await fs0.mkdir("assets",{recursive:true});
+await fs0.writeFile("assets/site-config.json",JSON.stringify(designRows[0].value,null,2)+"\\n");
 
 
 const API = `${SUPABASE_URL}/rest/v1/content_items?select=id,content_type,title,slug,excerpt,body,body_format,status,source_path,seo_title,seo_description,metadata,updated_at&status=eq.published&metadata->>cms_managed=eq.true&order=updated_at.asc`;
