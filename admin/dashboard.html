@@ -1,1 +1,254 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>لوحة التحكم — LaracheDev</title><link rel="stylesheet" href="./admin.css"><style>.dashboard{min-height:100vh;padding:28px}.bar,.panel{max-width:1000px;margin:auto}.bar{display:flex;justify-content:space-between;align-items:center;gap:16px}.panel{margin-top:24px;background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:28px}.logout{width:auto;padding:0 18px;background:#fee2e2;color:#b91c1c}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:22px}.item{border:1px solid #e2e8f0;border-radius:14px;padding:18px}.item strong{display:block;margin-bottom:7px}</style></head><body><main class="dashboard"><header class="bar"><div><strong>LaracheDev</strong><div class="muted">لوحة التحكم الإدارية</div></div><button id="logout" class="logout" type="button">تسجيل الخروج</button></header><section class="panel"><h1>مرحبًا بك</h1><p id="identity" class="muted">جاري التحقق من الجلسة…</p><div id="content" class="grid" hidden><div class="item"><strong>المصادقة</strong><span>جلسة Supabase نشطة</span></div><div class="item"><strong>الصلاحية</strong><span>مستخدم إداري مصرح</span></div><div class="item"><strong>الموقع</strong><span>gpldroid.github.io/larachedev</span></div></div></section></main><script type="module">import{createClient}from"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";const s=createClient("https://tdvohzsmxlwupiuompdd.supabase.co",atob("c2JfcHVibGlzaGFibGVfdGJIQThXQW5PSWF1Y2RCbVlIWVNTZ18tb0NBbzVzYQ=="),{auth:{flowType:"pkce",persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});async function guard(){const{data:{user}}=await s.auth.getUser();if(!user){location.replace("./");return}const{data:ok}=await s.rpc("is_admin");if(!ok){await s.auth.signOut();location.replace("./");return}document.querySelector("#identity").textContent="تم تسجيل الدخول: "+(user.email||"حساب GitHub");document.querySelector("#content").hidden=false}document.querySelector("#logout").onclick=async()=>{await s.auth.signOut();location.replace("./")};await guard();</script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>لوحة التحكم — LaracheDev</title>
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body class="admin-body">
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand-block">
+      <img src="../assets/LARACHE LOGO.webp" alt="LaracheDev">
+      <div><strong>LaracheDev</strong><span>Admin Panel</span></div>
+    </div>
+    <div class="side-section-title">نظرة عامة</div>
+    <nav class="side-nav" aria-label="التنقل">
+      <button class="nav-item active" data-section="overview"><span class="nav-icon">⌂</span><span>Overview</span></button>
+    </nav>
+    <div class="side-section-title">الرئيسية</div>
+    <nav class="side-nav">
+      <button class="nav-item" data-section="website"><span class="nav-icon">◉</span><span>Website</span><b>›</b></button>
+      <button class="nav-item" data-section="content"><span class="nav-icon">▤</span><span>Content</span><b>›</b></button>
+      <button class="nav-item" data-section="design"><span class="nav-icon">✦</span><span>Design</span><b>›</b></button>
+      <button class="nav-item" data-section="security"><span class="nav-icon">⌾</span><span>Security</span><b>›</b></button>
+      <button class="nav-item" data-section="system"><span class="nav-icon">⚙</span><span>System</span><b>›</b></button>
+    </nav>
+    <div class="side-section-title">المصادر</div>
+    <nav class="side-nav">
+      <a class="nav-item link-item" href="https://github.com/gpldroid/larachedev" target="_blank" rel="noopener"><span class="nav-icon">◆</span><span>GitHub</span><b>↗</b></a>
+      <a class="nav-item link-item" href="https://gpldroid.github.io/larachedev/" target="_blank" rel="noopener"><span class="nav-icon">◎</span><span>Open Site</span><b>↗</b></a>
+    </nav>
+    <div class="sidebar-footer">
+      <span class="status-dot"></span><span id="side-status">متصل</span>
+    </div>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <div class="topbar-title">
+        <button id="menu-button" class="mobile-menu" type="button" aria-label="فتح القائمة">☰</button>
+        <div>
+          <strong>لوحة التحكم</strong>
+          <span id="breadcrumb">Overview</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a class="top-link" href="https://gpldroid.github.io/larachedev/" target="_blank" rel="noopener">زيارة الموقع ↗</a>
+        <button id="refresh" class="icon-button" type="button" title="تحديث">↻</button>
+        <button id="theme-button" class="icon-button" type="button" title="الوضع الداكن">◐</button>
+        <button id="logout" class="logout-button" type="button">تسجيل الخروج</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <section id="loading" class="loading-card">جاري التحقق من الجلسة وتحميل بيانات لوحة التحكم…</section>
+
+      <section id="dashboard-app" hidden>
+        <div id="alert" class="dashboard-alert" hidden></div>
+
+        <section class="hero-card">
+          <div>
+            <div class="eyebrow">LaracheDev / Administration</div>
+            <h1>مرحبًا بك في لوحة التحكم</h1>
+            <p>إدارة الموقع والإعدادات والصلاحيات من مكان واحد.</p>
+          </div>
+          <div class="hero-actions">
+            <span id="role-badge" class="pill success">Admin</span>
+            <span id="session-badge" class="pill">Session Active</span>
+          </div>
+        </section>
+
+        <section class="section-view active" data-view="overview">
+          <div class="section-heading"><div><h2>Overview</h2><p>ملخص حالة الموقع والخدمات المتصلة.</p></div><button class="outline-button" id="overview-refresh">تحديث البيانات ↻</button></div>
+          <div class="stats-grid">
+            <article class="stat-card"><div class="stat-icon">◎</div><div class="stat-value" id="site-state">Active</div><div class="stat-label">SITE STATUS</div></article>
+            <article class="stat-card"><div class="stat-icon">◆</div><div class="stat-value" id="github-state">GitHub</div><div class="stat-label">REPOSITORY</div></article>
+            <article class="stat-card"><div class="stat-icon">◉</div><div class="stat-value" id="supabase-state">Connected</div><div class="stat-label">DATABASE</div></article>
+            <article class="stat-card"><div class="stat-icon">⌾</div><div class="stat-value" id="admin-count">1</div><div class="stat-label">ADMIN USERS</div></article>
+          </div>
+
+          <div class="content-grid">
+            <article class="panel live-panel">
+              <div class="panel-header"><h3>Live Preview</h3><a href="https://gpldroid.github.io/larachedev/" target="_blank" rel="noopener">فتح الموقع ↗</a></div>
+              <div class="preview-frame">
+                <div class="preview-toolbar"><span class="preview-dot"></span><span>gpldroid.github.io/larachedev</span></div>
+                <iframe title="معاينة الموقع" src="https://gpldroid.github.io/larachedev/" loading="lazy"></iframe>
+              </div>
+            </article>
+            <article class="panel quick-panel">
+              <div class="panel-header"><h3>Quick Actions</h3></div>
+              <div class="quick-grid">
+                <button data-section-target="website">⚙ <span>Site Settings</span></button>
+                <button data-section-target="content">▤ <span>Content</span></button>
+                <button data-section-target="security">⌾ <span>Security</span></button>
+                <a href="https://github.com/gpldroid/larachedev" target="_blank" rel="noopener">◆ <span>Git Manager</span></a>
+                <a href="https://supabase.com/dashboard/project/tdvohzsmxlwupiuompdd" target="_blank" rel="noopener">◉ <span>Supabase</span></a>
+                <a href="https://gpldroid.github.io/larachedev/" target="_blank" rel="noopener">↗ <span>Open Site</span></a>
+              </div>
+            </article>
+          </div>
+
+          <div class="section-heading compact"><div><h2>Site Overview</h2><p>القيم الحالية المحفوظة في Supabase.</p></div></div>
+          <div class="settings-grid" id="overview-settings"></div>
+        </section>
+
+        <section class="section-view" data-view="website">
+          <div class="section-heading"><div><h2>Website</h2><p>الإعدادات الأساسية للموقع والربط مع GitHub.</p></div><button class="primary-button" id="save-settings">حفظ التغييرات</button></div>
+          <article class="panel form-panel">
+            <div class="form-grid">
+              <label><span>Website URL</span><input id="setting-website_url" data-setting="website_url" type="url"></label>
+              <label><span>GitHub Owner</span><input id="setting-github_owner" data-setting="github_owner" type="text"></label>
+              <label><span>GitHub Repository</span><input id="setting-github_repo" data-setting="github_repo" type="text"></label>
+              <label><span>Default Branch</span><input id="setting-github_default_branch" data-setting="github_default_branch" type="text"></label>
+            </div>
+          </article>
+          <div class="content-grid two">
+            <article class="panel info-panel"><h3>Deployment</h3><p>الموقع يعمل من GitHub Pages. تغيير محتوى المستودع يمر عبر GitHub، بينما إعدادات لوحة التحكم تُحفظ في Supabase.</p><span class="pill success">GitHub Pages</span></article>
+            <article class="panel info-panel"><h3>Data Layer</h3><p>Supabase هو مصدر الحالة والإعدادات والصلاحيات. RLS مفعّل على الجداول الإدارية.</p><span class="pill success">RLS Enabled</span></article>
+          </div>
+        </section>
+
+        <section class="section-view" data-view="content">
+          <div class="section-heading"><div><h2>Content</h2><p>منطقة إدارة المحتوى، مهيأة للتوسع دون خلطها مع إعدادات النظام.</p></div></div>
+          <div class="module-grid">
+            <article class="module-card"><div class="module-icon">▤</div><h3>Pages</h3><p>إدارة صفحات الموقع الحالية ومحتواها.</p><span class="pill">جاهز للربط</span></article>
+            <article class="module-card"><div class="module-icon">▣</div><h3>Media</h3><p>الصور والملفات والموارد المستخدمة في الموقع.</p><span class="pill">جاهز للربط</span></article>
+            <article class="module-card"><div class="module-icon">◇</div><h3>Navigation</h3><p>تنظيم روابط الموقع والقوائم الرئيسية.</p><span class="pill">جاهز للربط</span></article>
+          </div>
+          <div class="notice-box"><strong>مهم:</strong> لم أضع محررًا وهميًا هنا. لا توجد حاليًا جداول محتوى في Supabase، لذلك هذه المنطقة منفصلة حتى نضيف schema المحتوى المطلوب فقط عندما تحدد حقوله.</div>
+        </section>
+
+        <section class="section-view" data-view="design">
+          <div class="section-heading"><div><h2>Design</h2><p>مركز التصميم العام للوحة الإدارة.</p></div></div>
+          <div class="module-grid">
+            <article class="module-card"><div class="module-icon">✦</div><h3>Admin Theme</h3><p>التصميم الحالي مطابق لهيكل CyberPanel-style: Sidebar، Header، Cards وQuick Actions.</p><button id="theme-toggle-card" class="outline-button">تبديل الوضع</button></article>
+            <article class="module-card"><div class="module-icon">▦</div><h3>Responsive</h3><p>الواجهة تتكيف مع الهاتف واللوحي وسطح المكتب.</p><span class="pill success">Responsive</span></article>
+            <article class="module-card"><div class="module-icon">◌</div><h3>Components</h3><p>المكونات موحدة في ملف CSS واحد للحفاظ على بنية خفيفة على GitHub Pages.</p><span class="pill success">Static / Fast</span></article>
+          </div>
+        </section>
+
+        <section class="section-view" data-view="security">
+          <div class="section-heading"><div><h2>Security</h2><p>المصادقة والصلاحيات وحالة حماية البيانات.</p></div></div>
+          <div class="security-grid">
+            <article class="security-card good"><span class="big-icon">✓</span><div><h3>Authentication</h3><p id="security-auth">Supabase Auth session active.</p></div></article>
+            <article class="security-card good"><span class="big-icon">✓</span><div><h3>Admin Authorization</h3><p id="security-role">تم التحقق من is_admin().</p></div></article>
+            <article class="security-card good"><span class="big-icon">✓</span><div><h3>Row Level Security</h3><p>الجداول الإدارية محمية بسياسات RLS.</p></div></article>
+            <article class="security-card warn"><span class="big-icon">!</span><div><h3>Password Protection</h3><p>يوجد تنبيه من Supabase بشأن Leaked Password Protection؛ يُنصح بتفعيله من إعدادات Auth.</p></div></article>
+          </div>
+        </section>
+
+        <section class="section-view" data-view="system">
+          <div class="section-heading"><div><h2>System</h2><p>حالة الخدمات وسجل العمليات الإدارية.</p></div><button class="outline-button" id="system-refresh">تحديث</button></div>
+          <div class="content-grid two">
+            <article class="panel">
+              <div class="panel-header"><h3>System Status</h3></div>
+              <div class="status-list">
+                <div><span>Supabase</span><b class="ok">Connected</b></div>
+                <div><span>GitHub Pages</span><b class="ok">Configured</b></div>
+                <div><span>Authentication</span><b class="ok">Active</b></div>
+                <div><span>Admin RPC</span><b class="ok">is_admin()</b></div>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-header"><h3>Audit Log</h3><span id="audit-count" class="pill">0 events</span></div>
+              <div id="audit-list" class="audit-list"><div class="empty-state">لا توجد عمليات مسجلة بعد.</div></div>
+            </article>
+          </div>
+        </section>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import{createClient}from"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+const SUPABASE_URL="https://tdvohzsmxlwupiuompdd.supabase.co";
+const SUPABASE_KEY=atob("c2JfcHVibGlzaGFibGVfdGJIQThXQW5PSWF1Y2RCbVlIWVNTZ18tb0NBbzVzYQ==");
+const supabase=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:"pkce",persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+const state={user:null,admin:null,settings:new Map(),audit:[]};
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function showAlert(message,type="info"){const el=$("#alert");el.textContent=message;el.className="dashboard-alert "+type;el.hidden=false;clearTimeout(showAlert.timer);showAlert.timer=setTimeout(()=>el.hidden=true,4500)}
+function valueOf(key){const v=state.settings.get(key);return typeof v==="string"?v:(v?.value??v??"")}
+async function loadData(){
+  const [settingsRes,adminsRes,auditRes]=await Promise.all([
+    supabase.from("site_settings").select("id,key,value,updated_at").order("id"),
+    supabase.from("admin_users").select("user_id,role,enabled,updated_at").order("created_at"),
+    supabase.from("audit_logs").select("id,action,resource,details,created_at").order("created_at",{ascending:false}).limit(8)
+  ]);
+  if(settingsRes.error)throw settingsRes.error;
+  state.settings=new Map((settingsRes.data||[]).map(x=>[x.key,x.value]));
+  state.admin=adminsRes.data?.find(x=>x.user_id===state.user.id)||null;
+  state.audit=auditRes.data||[];
+  render();
+}
+function render(){
+  const keys=["website_url","github_owner","github_repo","github_default_branch"];
+  keys.forEach(k=>{const el=$("[data-setting='"+k+"']");if(el)el.value=valueOf(k)});
+  $("#site-state").textContent=valueOf("website_url")?"Active":"Needs setup";
+  $("#github-state").textContent=valueOf("github_repo")||"GitHub";
+  $("#admin-count").textContent=state.admin?.enabled?"1":"0";
+  $("#role-badge").textContent=state.admin?.role||"admin";
+  $("#security-role").textContent="الدور الحالي: "+(state.admin?.role||"admin")+" — تم التحقق عبر is_admin().";
+  $("#overview-settings").innerHTML=keys.map(k=>"<div class='setting-mini'><span>"+esc(k)+"</span><strong>"+esc(valueOf(k))+"</strong></div>").join("");
+  $("#audit-count").textContent=state.audit.length+" events";
+  $("#audit-list").innerHTML=state.audit.length?state.audit.map(x=>"<div class='audit-row'><div><strong>"+esc(x.action||"update")+"</strong><span>"+esc(x.resource||"system")+"</span></div><time>"+new Date(x.created_at).toLocaleString("ar-MA")+"</time></div>").join(""):"<div class='empty-state'>لا توجد عمليات مسجلة بعد.</div>";
+}
+async function guard(){
+  const{data:{user},error}=await supabase.auth.getUser();
+  if(error||!user){location.replace("./");return false}
+  const{data:ok,error:rpcError}=await supabase.rpc("is_admin");
+  if(rpcError||!ok){await supabase.auth.signOut();location.replace("./");return false}
+  state.user=user;
+  $("#security-auth").textContent="الجلسة نشطة للحساب: "+(user.email||"GitHub user");
+  $("#loading").hidden=true;$("#dashboard-app").hidden=false;
+  await loadData();
+  return true;
+}
+async function saveSettings(){
+  const changes=$$("[data-setting]").map(el=>({key:el.dataset.setting,value:el.value.trim()}));
+  const{data:{user}}=await supabase.auth.getUser();
+  if(!user)return;
+  for(const item of changes){
+    const{error}=await supabase.from("site_settings").update({value:item.value,updated_by:user.id,updated_at:new Date().toISOString()}).eq("key",item.key);
+    if(error)throw error;
+  }
+  await supabase.from("audit_logs").insert({actor_id:user.id,action:"update_settings",resource:"site_settings",details:{keys:changes.map(x=>x.key)}});
+  await loadData();showAlert("تم حفظ إعدادات الموقع بنجاح.","success");
+}
+function activate(name){
+  $$(".nav-item[data-section]").forEach(x=>x.classList.toggle("active",x.dataset.section===name));
+  $$(".section-view").forEach(x=>x.classList.toggle("active",x.dataset.view===name));
+  $("#breadcrumb").textContent=name[0].toUpperCase()+name.slice(1);
+  $("#sidebar").classList.remove("open");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+$$(".nav-item[data-section]").forEach(b=>b.addEventListener("click",()=>activate(b.dataset.section)));
+$$("[data-section-target]").forEach(b=>b.addEventListener("click",()=>activate(b.dataset.sectionTarget)));
+$("#save-settings").addEventListener("click",async()=>{try{await saveSettings()}catch(e){showAlert("تعذر حفظ الإعدادات: "+(e.message||"خطأ غير معروف"),"error")}});
+$("#refresh").addEventListener("click",async()=>{try{await loadData();showAlert("تم تحديث البيانات.","success")}catch(e){showAlert("تعذر تحديث البيانات.","error")}});
+$("#overview-refresh").addEventListener("click",()=>$("#refresh").click());
+$("#system-refresh").addEventListener("click",()=>$("#refresh").click());
+$("#logout").addEventListener("click",async()=>{await supabase.auth.signOut();location.replace("./")});
+$("#menu-button").addEventListener("click",()=>$("#sidebar").classList.toggle("open"));
+function toggleTheme(){document.body.classList.toggle("dark");localStorage.setItem("larache_admin_theme",document.body.classList.contains("dark")?"dark":"light")}
+$("#theme-button").addEventListener("click",toggleTheme);$("#theme-toggle-card").addEventListener("click",toggleTheme);
+if(localStorage.getItem("larache_admin_theme")==="dark")document.body.classList.add("dark");
+await guard();
+</script>
+</body>
+</html>
