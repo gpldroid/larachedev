@@ -2,6 +2,17 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
 if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error("Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY");
 
+const DESIGN_API = `${SUPABASE_URL}/rest/v1/site_settings?select=key,value&key=eq.site_design`;
+const designRes = await fetch(DESIGN_API,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`}});
+if(!designRes.ok) throw new Error(`Supabase design query failed: ${designRes.status} ${await designRes.text()}`);
+const designRows=await designRes.json();
+if(!designRows.length||!designRows[0].value) throw new Error("site_design setting is missing");
+const fs=await import("node:fs/promises");
+const path=await import("node:path");
+await fs.mkdir("assets",{recursive:true});
+await fs.writeFile("assets/site-config.json",JSON.stringify(designRows[0].value,null,2)+"\\n");
+
+
 const API = `${SUPABASE_URL}/rest/v1/content_items?select=id,content_type,title,slug,excerpt,body,body_format,status,source_path,seo_title,seo_description,metadata,updated_at&status=eq.published&metadata->>cms_managed=eq.true&order=updated_at.asc`;
 const res = await fetch(API, {
   headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
