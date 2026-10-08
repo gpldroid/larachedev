@@ -1,0 +1,82 @@
+name: CMS Content Sync and GitHub Pages
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: cms-pages
+  cancel-in-progress: true
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Sync CMS content
+        id: cms
+        env:
+          SUPABASE_URL: https://tdvohzsmxlwupiuompdd.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_tbHA8WAnOIaucdBmYHYSSg_-oCAo5sa
+        run: node scripts/content-sync.mjs
+
+      - name: Commit CMS changes
+        id: commit
+        if: github.event_name != 'schedule'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git add .
+            git commit -m "chore(cms): sync published content"
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit scheduled CMS changes
+        id: scheduled_commit
+        if: github.event_name == 'schedule'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git add .
+            git commit -m "chore(cms): scheduled content sync"
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Pages
+        if: github.event_name != 'schedule' || steps.scheduled_commit.outputs.changed == 'true'
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'schedule' || steps.scheduled_commit.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        if: github.event_name != 'schedule' || steps.scheduled_commit.outputs.changed == 'true'
+        uses: actions/deploy-pages@v4
