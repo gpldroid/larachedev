@@ -1,0 +1,49 @@
+{
+  "dir": "rtl",
+  "lang": "ar",
+  "social": {
+    "whatsapp": "https://wa.me/212783539816"
+  },
+  "logo_path": "assets/LARACHE LOGO.webp",
+  "seo_title": "Larache Web Dev | تصميم المواقع والاستضافة وSEO",
+  "navigation": [
+    {
+      "href": "#home",
+      "label": "الرئيسية"
+    },
+    {
+      "href": "#services",
+      "label": "الخدمات"
+    },
+    {
+      "href": "#platforms",
+      "label": "المنصات"
+    },
+    {
+      "href": "#process",
+      "label": "طريقة العمل"
+    },
+    {
+      "href": "#pricing",
+      "label": "الأسعار"
+    },
+    {
+      "href": "#faq",
+      "label": "الأسئلة"
+    },
+    {
+      "href": "#contact",
+      "label": "اتصل بنا"
+    }
+  ],
+  "site_title": "Larache Web Dev",
+  "font_family": "Cairo",
+  "footer_text": "© Larache Web Dev — جميع الحقوق محفوظة.",
+  "accent_color": "#6864e5",
+  "favicon_path": "favicon.svg",
+  "primary_color": "#5652d9",
+  "header_variant": "default",
+  "seo_description": "تطوير المواقع والاستضافة والدومينات وSSL وWordPress وBlogger وPHP/MySQL وSEO.",
+  "background_color": "#f2f3ff",
+  "site_description": "تطوير المواقع والاستضافة والدومينات وSSL وWordPress وBlogger وPHP/MySQL وSEO وتحليل الزيارات والحماية."
+}\n
