@@ -10,6 +10,12 @@
       <div id="loginMsg" class="auth-message" role="alert" aria-live="polite"></div>
       <button id="loginSubmit" class="primary auth-submit" type="submit">دخول</button>
     </form>
+    <form id="resetForm" class="auth-form" hidden>
+      <label for="newPassword">كلمة المرور الجديدة<input id="newPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="••••••••"></label>
+      <label for="confirmPassword">تأكيد كلمة المرور<input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="••••••••"></label>
+      <div id="resetMsg" class="auth-message" role="alert" aria-live="polite"></div>
+      <button id="resetSubmit" class="primary auth-submit" type="submit">تحديث كلمة المرور</button>
+    </form>
     <button id="forgotPasswordBtn" class="text-button auth-forgot" type="button">نسيت كلمة المرور؟</button>
   </div>
 </section>
