@@ -134,7 +134,22 @@ async function start(nextSession=null){
   }
 }
 
-function showLogin(error=""){ $("#loginView").hidden=false;$("#dashboardView").hidden=true;$("#logoutBtn").hidden=true;if(error)msg("loginMsg","❌ "+error)}
+function humanAuthError(error){
+  const raw=String(error?.message||error||"").trim(),text=raw.toLowerCase();
+  if(!raw)return "";
+  if(text.includes("invalid login credentials"))return "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+  if(text.includes("email not confirmed"))return "يجب تأكيد البريد الإلكتروني قبل تسجيل الدخول.";
+  if(text.includes("too many requests")||text.includes("rate limit"))return "تم تجاوز عدد محاولات الدخول المسموح بها. انتظر قليلًا ثم حاول مرة أخرى.";
+  if(text.includes("network")||text.includes("failed to fetch"))return "تعذر الاتصال بخدمة المصادقة. تحقق من اتصال الإنترنت وحاول مرة أخرى.";
+  if(text.includes("pkce")||text.includes("code verifier"))return "تعذر إكمال تسجيل الدخول عبر GitHub. أعد فتح صفحة الدخول وحاول مرة أخرى.";
+  if(text.includes("redirect"))return "إعداد إعادة التوجيه لتسجيل الدخول غير صحيح. راجع إعدادات OAuth.";
+  if(text.includes("not registered")||text.includes("غير مسجل"))return "تم تسجيل الدخول بنجاح، لكن هذا الحساب غير مصرح له بدخول لوحة الإدارة.";
+  return raw;
+}
+function showLogin(error=""){
+  $("#loginView").hidden=false;$("#dashboardView").hidden=true;$("#logoutBtn").hidden=true;
+  if(error)msg("loginMsg","❌ "+humanAuthError(error));
+}
 
 async function githubLogin(){
   if(!sb)return msg("loginMsg","❌ تعذر تحميل Supabase Auth. تحقق من اتصال الشبكة ثم أعد تحميل الصفحة.");
@@ -166,22 +181,41 @@ function readAuthCallbackError(){
 
 $("#loginForm").onsubmit=async e=>{
   e.preventDefault();
-  if(!sb)return msg("loginMsg","❌ تعذر تحميل Supabase Auth. تحقق من اتصال الشبكة ثم أعد تحميل الصفحة.");
-  msg("loginMsg","جارٍ تسجيل الدخول…");
+  if(!sb)return msg("loginMsg","❌ تعذر تحميل خدمة المصادقة. أعد تحميل الصفحة.");
+  const email=$("#email").value.trim(),password=$("#password").value;
+  if(!email||!$("#email").validity.valid)return msg("loginMsg","أدخل بريدًا إلكترونيًا صالحًا.");
+  if(!password)return msg("loginMsg","أدخل كلمة المرور.");
+  const submit=$("#loginSubmit");submit.disabled=true;msg("loginMsg","جارٍ التحقق من بيانات الدخول…");
   try{
-    const {data,error}=await sb.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});
-    if(error){
-      if(error.message?.toLowerCase().includes("invalid login credentials")){
-        throw Error("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
-      }
-      throw error;
-    }
+    const {data,error}=await sb.auth.signInWithPassword({email,password});
+    if(error)throw error;
     if(!data.session)throw Error("تمت المصادقة لكن لم يتم إنشاء جلسة.");
     await start(data.session);
-  }catch(e){msg("loginMsg",e.message||"فشل تسجيل الدخول.")}
+  }catch(e){msg("loginMsg","❌ "+humanAuthError(e));}
+  finally{submit.disabled=false;}
 };
 
 $("#githubLoginBtn").onclick=githubLogin;
+
+$("#togglePassword").onclick=()=>{
+  const input=$("#password"),button=$("#togglePassword"),visible=input.type==="text";
+  input.type=visible?"password":"text";button.textContent=visible?"إظهار":"إخفاء";
+  button.setAttribute("aria-label",visible?"إظهار كلمة المرور":"إخفاء كلمة المرور");
+  button.setAttribute("aria-pressed",String(!visible));
+};
+
+$("#forgotPasswordBtn").onclick=async()=>{
+  if(!sb)return msg("loginMsg","❌ خدمة المصادقة غير متاحة حاليًا.");
+  const email=$("#email").value.trim();
+  if(!email||!$("#email").validity.valid)return msg("loginMsg","أدخل بريدك الإلكتروني أولًا.");
+  const button=$("#forgotPasswordBtn");button.disabled=true;msg("loginMsg","جارٍ إرسال تعليمات إعادة تعيين كلمة المرور…");
+  try{
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:"https://gpldroid.github.io/larachedev/admin/"});
+    if(error)throw error;
+    msg("loginMsg","إذا كان البريد مسجلًا، ستصلك تعليمات إعادة تعيين كلمة المرور.");
+  }catch(e){msg("loginMsg","❌ "+humanAuthError(e));}
+  finally{button.disabled=false;}
+};
 $("#logoutBtn").onclick=async()=>{
   try{if(sb)await sb.auth.signOut({scope:"local"})}finally{localStorage.removeItem("larachedev_session");session=null;role=null;location.reload()}
 };
