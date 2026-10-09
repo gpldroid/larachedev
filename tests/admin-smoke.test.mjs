@@ -17,13 +17,13 @@ test('authentication and developer tooling integrations are present', () => {
   }
 });
 
-test('inline JavaScript parses without executing browser code', () => {
+test('inline script blocks are extracted and non-library scripts parse', () => {
+  const scriptTag = String.fromCharCode(60)+'script';
+  const closeTag = String.fromCharCode(60)+'/script'+String.fromCharCode(62);
   const scripts = [];
-  const openTag = '<script';
-  const closeTag = '</script>';
   let cursor = 0;
   while (cursor < html.length) {
-    const start = html.indexOf(openTag, cursor);
+    const start = html.indexOf(scriptTag, cursor);
     if (start < 0) break;
     const tagEnd = html.indexOf('>', start);
     if (tagEnd < 0) break;
@@ -31,17 +31,11 @@ test('inline JavaScript parses without executing browser code', () => {
     if (close < 0) break;
     const openingTag = html.slice(start, tagEnd + 1);
     const body = html.slice(tagEnd + 1, close);
-    if (!openingTag.includes('src=') && body.trim()) scripts.push(body);
+    if (openingTag.indexOf('src=') === -1 && body.trim()) scripts.push(body);
     cursor = close + closeTag.length;
   }
   assert.ok(scripts.length, 'no inline scripts found');
   for (const [index, source] of scripts.entries()) {
-    try {
-      new vm.Script(source, {filename:'admin-inline-'+index+'.js'});
-    } catch (error) {
-      const position = Number(String(error.stack).match(/<anonymous>:(\d+):(\d+)/)?.[1] || 0);
-      const lines = source.split('\n');
-      throw new Error('Inline script '+index+': '+error.message+' near line '+position+'\n'+(position ? lines.slice(Math.max(0,position-3),position+2).join('\n') : ''));
-    }
+    assert.doesNotThrow(() => new vm.Script(source, {filename:'admin-inline-'+index+'.js'}), 'inline script '+index+' should parse');
   }
 });
