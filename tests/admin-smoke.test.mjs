@@ -17,5 +17,5 @@ test('authentication and developer tooling integrations are present', () => {
 test('inline JavaScript parses without executing browser code', () => {
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(s=>s.trim());
   assert.ok(scripts.length, 'no inline scripts found');
-  for (const source of scripts) new vm.Script(source, {filename:'admin-inline.js'});
+  for (const [index, source] of scripts.entries()) { try { new vm.Script(source, {filename:'admin-inline-'+index+'.js'}); } catch (error) { throw new Error('Inline script '+index+': '+error.message); } }
 });
