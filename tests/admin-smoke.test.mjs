@@ -31,7 +31,7 @@ test('inline JavaScript parses without executing browser code', () => {
     if (close < 0) break;
     const openingTag = html.slice(start, tagEnd + 1);
     const body = html.slice(tagEnd + 1, close);
-    if (!/\bsrc\s*=/.test(openingTag) && body.trim()) scripts.push(body);
+    if (!openingTag.includes('src=') && body.trim()) scripts.push(body);
     cursor = close + closeTag.length;
   }
   assert.ok(scripts.length, 'no inline scripts found');
@@ -39,7 +39,9 @@ test('inline JavaScript parses without executing browser code', () => {
     try {
       new vm.Script(source, {filename:'admin-inline-'+index+'.js'});
     } catch (error) {
-      throw new Error('Inline script '+index+': '+error.message);
+      const position = Number(String(error.stack).match(/<anonymous>:(\d+):(\d+)/)?.[1] || 0);
+      const lines = source.split('\n');
+      throw new Error('Inline script '+index+': '+error.message+' near line '+position+'\n'+(position ? lines.slice(Math.max(0,position-3),position+2).join('\n') : ''));
     }
   }
 });
