@@ -109,7 +109,42 @@ $('previewHtml').onclick=()=>{$('htmlCode').value=htmlValue();$('htmlPreview').s
 $('saveHtml').onclick=async()=>{try{if(!['owner','admin','editor'].includes(adminRole))throw new Error('Your role cannot edit files');const path=$('htmlPath').value.trim();if(!path||path.startsWith('/')||path.split('/').includes('..'))throw new Error('Use a safe repository-relative path');await manager('write-file','POST',{path,content:htmlValue(),message:'admin: update HTML page',branch:$('repoBranch').value||'main'});say('HTML saved to GitHub')}catch(e){say(err(e))}};
 function decodeGithubContent(encoded){const binary=atob(String(encoded||'').replaceAll('\n',''));const bytes=Uint8Array.from(binary,ch=>ch.charCodeAt(0));return new TextDecoder().decode(bytes)}
 $('loadDeployWorkflows').onclick=async()=>{const btn=$('loadDeployWorkflows');btn.disabled=true;btn.textContent='Checking workflows…';try{const d=await manager('workflows');const workflows=(d.workflows||[]).filter(w=>w.state==='active'&&w.path);const runnable=[];for(const workflow of workflows){try{const file=await manager('file','GET',null,{path:workflow.path,ref:$('deployBranch').value||'main'});const text=decodeGithubContent(file.content);if(text.includes('workflow_dispatch:'))runnable.push(workflow)}catch{}}const select=$('deployWorkflow');select.innerHTML=runnable.length?runnable.map(w=>'<option value="'+esc(w.path.split('/').pop())+'" data-path="'+esc(w.path)+'">'+esc(w.name)+' · '+esc(w.path.split('/').pop())+'</option>').join(''):'<option value="">No active workflow_dispatch workflow found</option>';const ready=runnable.length>0;$('triggerDeploy').disabled=!ready;$('deployWorkflowNotice').textContent=ready?'Only workflows declaring workflow_dispatch are listed. Environment is tracked in Supabase; pass only declared workflow inputs in JSON.':'No active workflow in this repository declares workflow_dispatch. Add one in .github/workflows before a manual deployment can run.';say(ready?'Found '+runnable.length+' runnable workflow(s)':'No manually runnable workflow is configured')}catch(e){$('workflowOutput').textContent=err(e);say(err(e))}finally{btn.disabled=false;btn.textContent='↻ Find runnable workflows'}};
-async function syncDeploymentRows(runs){const {data:allRows,error}=await sb.from('site_deployments').select('id,workflow_run_id,created_at');if(error)throw error;const linked=new Set((allRows||[]).map(x=>Number(x.workflow_run_id)).filter(Boolean));const {data:pending,error:pendingError}=await sb.from('site_deployments').select('*').in('status',['queued','in_progress']).order('created_at',{ascending:true}).limit(100);if(pendingError)throw pendingError;let updated=0;for(const row of pending||[]){const expected=row.workflow_name?String(row.workflow_name).split('/').pop():'';const queuedAt=new Date(row.created_at).getTime();const match=(runs||[]).filter(run=>run.path&&run.path.split('/').pop()===expected&&run.head_branch===row.branch&&!linked.has(Number(run.id))&&new Date(run.created_at).getTime()>=queuedAt-120000&&new Date(run.created_at).getTime()<=queuedAt+15*60*1000).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at))[0];if(!match)continue;let status='in_progress';let completedAt=null;if(match.status==='queued'||match.status==='requested'||match.status==='waiting')status='queued';if(match.status==='completed'){status=match.conclusion==='success'?'success':(['cancelled','skipped'].includes(match.conclusion)?'cancelled':'failure');completedAt=match.updated_at||new Date().toISOString()}const {error:writeError}=await sb.from('site_deployments').update({workflow_run_id:match.id,commit_sha:match.head_sha||null,status,deployment_url:match.html_url||null,started_at:match.run_started_at||match.created_at,completed_at:completedAt,details:{...(row.details||{}),github_run_id:match.id,github_run_url:match.html_url,github_conclusion:match.conclusion||null}}).eq('id',row.id);if(writeError)throw writeError;linked.add(Number(match.id));updated++}return updated}
+async function syncDeploymentRows(runs){
+  const {data:allRows,error}=await sb.from('site_deployments').select('id,workflow_run_id,created_at');
+  if(error)throw error;
+  const linked=new Set((allRows||[]).map(x=>Number(x.workflow_run_id)).filter(Boolean));
+  const {data:pending,error:pendingError}=await sb.from('site_deployments').select('*').in('status',['queued','in_progress']).order('created_at',{ascending:true}).limit(100);
+  if(pendingError)throw pendingError;
+  let updated=0;
+  for(const row of pending||[]){
+    const expected=row.workflow_name?String(row.workflow_name).split('/').pop():'';
+    const queuedAt=new Date(row.created_at).getTime();
+    let match=null;
+    if(row.workflow_run_id){
+      match=(runs||[]).find(run=>Number(run.id)===Number(row.workflow_run_id))||null;
+    }else{
+      match=(runs||[]).filter(run=>run.path&&run.path.split('/').pop()===expected&&run.head_branch===row.branch&&!linked.has(Number(run.id))&&new Date(run.created_at).getTime()>=queuedAt-30000&&new Date(run.created_at).getTime()<=queuedAt+15*60*1000).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at))[0]||null;
+    }
+    if(!match)continue;
+    let status='in_progress';
+    let completedAt=null;
+    if(['queued','requested','waiting'].includes(match.status))status='queued';
+    if(match.status==='completed'){
+      status=match.conclusion==='success'?'success':(['cancelled','skipped'].includes(match.conclusion)?'cancelled':'failure');
+      completedAt=match.updated_at||new Date().toISOString();
+    }
+    const {error:writeError}=await sb.from('site_deployments').update({
+      workflow_run_id:match.id,commit_sha:match.head_sha||null,status,
+      deployment_url:match.html_url||null,
+      started_at:match.run_started_at||match.created_at,completed_at:completedAt,
+      details:{...(row.details||{}),github_run_id:match.id,github_run_url:match.html_url,github_conclusion:match.conclusion||null}
+    }).eq('id',row.id);
+    if(writeError)throw writeError;
+    linked.add(Number(match.id));
+    updated++;
+  }
+  return updated;
+}
 $('loadWorkflowRuns').onclick=async()=>{const btn=$('loadWorkflowRuns');btn.disabled=true;try{const d=await manager('runs');const runs=d.workflow_runs||[];const updated=await syncDeploymentRows(runs);$('workflowOutput').textContent=runs.slice(0,15).map(x=>[x.name,x.status,x.conclusion||'running',x.head_branch,x.html_url].join(' · ')).join('\n')||'No runs found';await loadDeployments();say('Loaded '+runs.length+' workflow runs; reconciled '+updated+' deployment record(s)')}catch(e){$('workflowOutput').textContent=err(e);say(err(e))}finally{btn.disabled=false}};
 
 $('triggerDeploy').onclick=async()=>{const btn=$('triggerDeploy');btn.disabled=true;try{if(!['owner','admin'].includes(adminRole))throw new Error('Only administrators can trigger deployments');const provider=$('deployProvider').value;if(provider!=='github-actions')throw new Error('This provider has no deployment adapter yet');const select=$('deployWorkflow'),workflow=select.value.trim(),branch=$('deployBranch').value.trim()||'main';if(!workflow)throw new Error('Load and select a runnable workflow first');let inputs;try{inputs=JSON.parse($('deployInputs').value.trim()||'{}')}catch{throw new Error('Workflow inputs must be valid JSON')}if(!inputs||Array.isArray(inputs)||typeof inputs!=='object')throw new Error('Workflow inputs must be a JSON object');const dispatch=await manager('dispatch','POST',{workflow,ref:branch,inputs});if(!dispatch.ok)throw new Error(dispatch.error||'GitHub did not accept the workflow dispatch');const row={repository_owner:$('repoOwner').value.trim().toLowerCase(),repository_name:$('repoName').value.trim().toLowerCase(),branch,status:'queued',environment:$('deployEnvironment').value,workflow_name:workflow,triggered_by:currentUser.id,details:{provider:'github-actions',workflow_path:select.selectedOptions[0]?.dataset.path||'.github/workflows/'+workflow,inputs}};const {error}=await sb.from('site_deployments').insert(row);if(error)throw new Error('GitHub accepted the workflow dispatch, but the deployment tracking record failed: '+error.message);say('Workflow dispatch accepted; press Sync statuses to attach its run ID and final result');await loadDeployments()}catch(e){say(err(e))}finally{btn.disabled=!$('deployWorkflow').value}};
