@@ -74,20 +74,20 @@ public class SupportActivity extends Activity {
     private String localAssistant(String message) {
         String q = message.toLowerCase();
         if (containsAny(q, "seo", "سيو", "محركات", "search"))
-            return "نقدم SEO تقني ومحتوى: تحسين العناوين والوصف، البيانات المنظمة، السرعة، الروابط الداخلية وتحليل الزيارات. إذا أرسلت رابط موقعك يمكن لفريق الدعم تحديد المطلوب.");
+            return "نقدم SEO تقني ومحتوى: تحسين العناوين والوصف، البيانات المنظمة، السرعة، الروابط الداخلية وتحليل الزيارات. إذا أرسلت رابط موقعك يمكن لفريق الدعم تحديد المطلوب";
         if (containsAny(q, "wordpress", "ووردبريس", "woocommerce"))
-            return "يمكننا إنشاء وتخصيص ونقل WordPress وWooCommerce وتحسين الأداء والإضافات والتهيئة التقنية.");
+            return "يمكننا إنشاء وتخصيص ونقل WordPress وWooCommerce وتحسين الأداء والإضافات والتهيئة التقنية";
         if (containsAny(q, "blogger", "blogspot", "بلوجر"))
-            return "ندعم Blogger/Blogspot: تخصيص القالب، ربط الدومين، الصفحات، بنية المقالات وSEO.");
+            return "ندعم Blogger/Blogspot: تخصيص القالب، ربط الدومين، الصفحات، بنية المقالات وSEO";
         if (containsAny(q, "domain", "دومين", "نطاق", "dns"))
-            return "نساعدك في اختيار وربط وإدارة الدومين وسجلات DNS الأساسية وربطه بالاستضافة.");
+            return "نساعدك في اختيار وربط وإدارة الدومين وسجلات DNS الأساسية وربطه بالاستضافة";
         if (containsAny(q, "hosting", "استضافة", "سيرفر", "vps", "cpanel"))
-            return "نساعدك في اختيار وتهيئة الاستضافة، cPanel أو VPS، ونقل الموقع والنسخ الاحتياطي والبريد.");
+            return "نساعدك في اختيار وتهيئة الاستضافة، cPanel أو VPS، ونقل الموقع والنسخ الاحتياطي والبريد";
         if (containsAny(q, "ssl", "https", "شهادة", "أمان", "security"))
-            return "يمكننا تهيئة SSL/TLS وHTTPS وإعادة التوجيه ومراجعة أساسيات الحماية والنسخ الاحتياطي.");
+            return "يمكننا تهيئة SSL/TLS وHTTPS وإعادة التوجيه ومراجعة أساسيات الحماية والنسخ الاحتياطي";
         if (containsAny(q, "price", "pricing", "سعر", "ثمن", "تكلفة"))
-            return "الأسعار تعتمد على نطاق المشروع والمزايا المطلوبة. اضغط على WhatsApp من الموقع لإرسال تفاصيل مشروعك والحصول على عرض مناسب.");
-        return "أستطيع مساعدتك في تطوير المواقع، المتاجر، الاستضافة، الدومينات، SSL، WordPress، Blogger وSEO. اكتب مثلاً: أريد موقعاً، أريد تحسين SEO، أو لدي مشكلة في الاستضافة.");
+            return "الأسعار تعتمد على نطاق المشروع والمزايا المطلوبة. اضغط على WhatsApp من الموقع لإرسال تفاصيل مشروعك والحصول على عرض مناسب";
+        return "أستطيع مساعدتك في تطوير المواقع، المتاجر، الاستضافة، الدومينات، SSL، WordPress، Blogger وSEO. اكتب مثلاً: أريد موقعاً، أريد تحسين SEO، أو لدي مشكلة في الاستضافة";
     }
 
     private boolean containsAny(String text, String... values) {
@@ -114,7 +114,7 @@ public class SupportActivity extends Activity {
 
             int code = connection.getResponseCode();
             InputStream stream = code >= 200 && code < 300 ? connection.getInputStream() : connection.getErrorStream();
-            if (stream == null) return "تعذر الاتصال بخدمة الذكاء الاصطناعي حالياً. حاول مرة أخرى.");
+            if (stream == null) return "تعذر الاتصال بخدمة الذكاء الاصطناعي حالياً. حاول مرة أخرى";
 
             StringBuilder response = new StringBuilder();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
@@ -124,7 +124,7 @@ public class SupportActivity extends Activity {
             JSONObject json = new JSONObject(response.toString());
             return json.optString("reply", json.optString("message", "وصلتني رسالتك، لكن لم يصل رد صالح من خادم الذكاء الاصطناعي."));
         } catch (Exception e) {
-            return "تعذر الوصول إلى خادم الذكاء الاصطناعي. المساعد المحلي ما زال متاحاً للأسئلة الشائعة.");
+            return "تعذر الوصول إلى خادم الذكاء الاصطناعي. المساعد المحلي ما زال متاحاً للأسئلة الشائعة";
         } finally {
             if (connection != null) connection.disconnect();
         }
