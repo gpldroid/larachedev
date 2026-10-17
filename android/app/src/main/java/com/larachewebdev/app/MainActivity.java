@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -37,6 +38,7 @@ public class MainActivity extends Activity {
 
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+        webView.addJavascriptInterface(new SupportBridge(), "LaracheSupport");
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -47,6 +49,12 @@ public class MainActivity extends Activity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return handleUrl(url);
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                injectSupportButton(view);
             }
         });
 
@@ -70,6 +78,15 @@ public class MainActivity extends Activity {
         else webView.restoreState(savedInstanceState);
     }
 
+    private void injectSupportButton(WebView view) {
+        String js = "javascript:(function(){if(document.getElementById('native-ai-support'))return;" +
+                "var b=document.createElement('button');b.id='native-ai-support';b.type='button';" +
+                "b.textContent='🤖 مساعد AI';b.setAttribute('aria-label','فتح مساعد الذكاء الاصطناعي');" +
+                "b.style.cssText='position:fixed;bottom:20px;left:20px;z-index:2147483647;border:0;border-radius:999px;padding:13px 18px;background:#0b1220;color:#fff;font:700 14px sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.22);cursor:pointer';" +
+                "b.onclick=function(){LaracheSupport.openSupport()};document.body.appendChild(b)})()";
+        view.evaluateJavascript(js, null);
+    }
+
     private boolean handleUrl(String url) {
         Uri uri = Uri.parse(url);
         String scheme = uri.getScheme();
@@ -85,6 +102,13 @@ public class MainActivity extends Activity {
             return true;
         }
         return false;
+    }
+
+    private class SupportBridge {
+        @JavascriptInterface
+        public void openSupport() {
+            runOnUiThread(() -> startActivity(new Intent(MainActivity.this, SupportActivity.class)));
+        }
     }
 
     @Override
