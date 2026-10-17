@@ -8,7 +8,12 @@
         android:icon="@drawable/larache_logo"
         android:roundIcon="@drawable/larache_logo"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="false"
         android:theme="@style/Theme.LaracheWebDev">
+        <activity
+            android:name=".SupportActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
